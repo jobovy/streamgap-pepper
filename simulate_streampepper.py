@@ -75,9 +75,11 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
     if os.path.exists(options.outdens):
         # First read the file to check apar
         apar_file= numpy.genfromtxt(options.outdens,delimiter=',',max_rows=1)
-        assert numpy.amax(numpy.fabs(apar_file-apar)) < 10.**-8., 'apar according to options does not correspond to apar already in outdens'
+        print numpy.amax(numpy.fabs(apar_file-apar))
+        assert numpy.amax(numpy.fabs(apar_file-apar)) < 10.**-5., 'apar according to options does not correspond to apar already in outdens'
         apar_file= numpy.genfromtxt(options.outomega,delimiter=',',max_rows=1)
-        assert numpy.amax(numpy.fabs(apar_file-apar)) < 10.**-8., 'apar according to options does not correspond to apar already in outomega'
+        print numpy.amax(numpy.fabs(apar_file-apar))
+        assert numpy.amax(numpy.fabs(apar_file-apar)) < 10.**-5., 'apar according to options does not correspond to apar already in outomega'
         csvdens= open(options.outdens,'a')
         csvomega= open(options.outomega,'a')       
         denswriter= csv.writer(csvdens,delimiter=',')

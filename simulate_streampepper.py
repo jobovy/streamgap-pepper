@@ -106,7 +106,15 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
         rate= options.timescdm*dNencdm(sdf_pepper,
                                        10.**massrange[0],Xrs=options.Xrs)
     elif len(massrange) == 2:
-        raise NotImplementedError('Mass range not implemented yet')
+        # Sample from power-law
+        sample_GM= lambda: 1./(10.**-massrange[0]\
+                                   +(10.**-massrange[1]-10.**-massrange[0])\
+                                   *numpy.random.uniform())\
+                                   /bovy_conversion.mass_in_msol(V0,R0)
+        rate_range= numpy.arange(massrange[0]+0.5,massrange[1]+0.5,1)
+        rate= options.timescdm\
+            *numpy.sum([dNencdm(sdf_pepper,10.**r,Xrs=options.Xrs)
+                        for r in rate_range])
     print "Using an overall rate of %f" % rate
     sample_rs= lambda x: rs(x*bovy_conversion.mass_in_1010msol(V0,R0)*10.**10.)
     # Simulate

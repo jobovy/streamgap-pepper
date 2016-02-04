@@ -14,10 +14,6 @@ def get_options():
     # stream
     parser.add_option("-s","--stream",dest='stream',default='gd1like',
                       help="Stream to consider")
-    # Might be useful later
-    #parser.add_option("--truefalse",action="store_true", 
-    #                  dest="truefalse",default=False,
-    #                  help="If set, set this option to True")
     # savefilenames
     parser.add_option("--outdens",dest='outdens',default=None,
                       help="Name of the output file for the density")
@@ -33,6 +29,9 @@ def get_options():
                       help="Mass or mass range to consider; given as log10(mass)")
     parser.add_option("--timescdm",dest='timescdm',default=1.,
                       help="Use a rate that is timescdm times the CDM prediction")
+    parser.add_option("--plummer",action="store_true", 
+                      dest="plummer",default=False,
+                      help="If set, use a Plummer DM profile rather than Hernquist")
     # Parallel angles at which to compute stuff
     parser.add_option("--amin",dest='amin',default=None,
                       type='float',
@@ -142,7 +141,8 @@ if __name__ == '__main__':
     # Setup 
     if options.stream.lower() == 'gd1like':
         timpacts= parse_times(options.timpacts)
-        sdf_pepper= gd1_util.setup_gd1model(timpact=timpacts)
+        sdf_pepper= gd1_util.setup_gd1model(timpact=timpacts,
+                                            hernquist=not options.plummer)
     # Need smooth?
     if options.amax is None or options.amin is None:
         sdf_smooth= gd1_util.setup_gd1model()

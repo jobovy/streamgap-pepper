@@ -109,9 +109,10 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
                                        10.**massrange[0],Xrs=options.Xrs)
     elif len(massrange) == 2:
         # Sample from power-law
-        sample_GM= lambda: 1./(10.**-massrange[0]\
-                                   +(10.**-massrange[1]-10.**-massrange[0])\
-                                   *numpy.random.uniform())\
+        sample_GM= lambda: (10.**-(massrange[0]/2.)\
+                                   +(10.**-(massrange[1]/2.)\
+                                         -10.**(-massrange[0]/2.))\
+                                   *numpy.random.uniform())**-2.\
                                    /bovy_conversion.mass_in_msol(V0,R0)
         rate_range= numpy.arange(massrange[0]+0.5,massrange[1]+0.5,1)
         rate= options.timescdm\

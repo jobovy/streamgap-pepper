@@ -60,8 +60,11 @@ def parse_mass(mass):
 # Functions to sample
 def nsubhalo(m):
     return 0.3*(10.**6.5/m)
-def rs(m):
-    return 1.05/R0*(m/10.**8.)**0.5
+def rs(m,plummer=False):
+    if plummer:
+        return 1.62/R0*(m/10.**8.)**0.5
+    else:
+        return 1.05/R0*(m/10.**8.)**0.5
 def dNencdm(sdf_pepper,m,Xrs=3.):
     return sdf_pepper.subhalo_encounters(\
         sigma=120./220.,nsubhalo=nsubhalo(m),bmax=Xrs*rs(m))
@@ -118,7 +121,8 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
             *numpy.sum([dNencdm(sdf_pepper,10.**r,Xrs=options.Xrs)
                         for r in rate_range])
     print "Using an overall rate of %f" % rate
-    sample_rs= lambda x: rs(x*bovy_conversion.mass_in_1010msol(V0,R0)*10.**10.)
+    sample_rs= lambda x: rs(x*bovy_conversion.mass_in_1010msol(V0,R0)*10.**10.,
+                            plummer=options.plummer)
     # Simulate
     start= time.time()
     while time.time() < (start+options.dt*60.):

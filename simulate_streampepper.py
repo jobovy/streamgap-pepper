@@ -29,7 +29,7 @@ def get_options():
                       help="Mass or mass range to consider; given as log10(mass)")
     parser.add_option("--timescdm",dest='timescdm',default=1.,
                       help="Use a rate that is timescdm times the CDM prediction")
-    parser.add_option("--rsfac",dest='rsfac',default=1.,
+    parser.add_option("--rsfac",dest='rsfac',default=1.,type='float',
                       help="Use a r_s(M) relation that is a factor of rsfac different from the fiducial one")
     parser.add_option("--plummer",action="store_true", 
                       dest="plummer",default=False,

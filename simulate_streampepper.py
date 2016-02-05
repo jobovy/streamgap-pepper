@@ -65,9 +65,9 @@ def rs(m,plummer=False):
         return 1.62/R0*(m/10.**8.)**0.5
     else:
         return 1.05/R0*(m/10.**8.)**0.5
-def dNencdm(sdf_pepper,m,Xrs=3.):
+def dNencdm(sdf_pepper,m,Xrs=3.,plummer=False):
     return sdf_pepper.subhalo_encounters(\
-        sigma=120./220.,nsubhalo=nsubhalo(m),bmax=Xrs*rs(m))
+        sigma=120./220.,nsubhalo=nsubhalo(m),bmax=Xrs*rs(m,plummer=plummer))
 
 # Function to run the simulations
 def run_simulations(sdf_pepper,sdf_smooth,options):
@@ -108,7 +108,8 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
         sample_GM= lambda: 10.**(massrange[0]-10.)\
             /bovy_conversion.mass_in_1010msol(V0,R0)
         rate= options.timescdm*dNencdm(sdf_pepper,
-                                       10.**massrange[0],Xrs=options.Xrs)
+                                       10.**massrange[0],Xrs=options.Xrs,
+                                       plummer=options.plummer)
     elif len(massrange) == 2:
         # Sample from power-law
         sample_GM= lambda: (10.**-(massrange[0]/2.)\
@@ -118,7 +119,8 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
                                    /bovy_conversion.mass_in_msol(V0,R0)
         rate_range= numpy.arange(massrange[0]+0.5,massrange[1]+0.5,1)
         rate= options.timescdm\
-            *numpy.sum([dNencdm(sdf_pepper,10.**r,Xrs=options.Xrs)
+            *numpy.sum([dNencdm(sdf_pepper,10.**r,Xrs=options.Xrs,
+                                plummer=options.plummer)
                         for r in rate_range])
     print "Using an overall rate of %f" % rate
     sample_rs= lambda x: rs(x*bovy_conversion.mass_in_1010msol(V0,R0)*10.**10.,

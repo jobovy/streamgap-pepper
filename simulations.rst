@@ -34,9 +34,11 @@ Do::
 
 	python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_5-9_omega.dat -t 64sampling -M 5,9 --dt=350. -X 5.
 
-Plummer
--------
+Plummer and different rs for Hernquist
+---------------------------------------
 
-Do::
+Commands like::
 
-	python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_plum_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_plum_5-9_omega.dat -t 64sampling -M 5,9 --dt=350. -X 5. --plummer
+	python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X3p24_plum_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X3p24_plum_5-9_omega.dat -t 64sampling -M 5,9 --dt=1000. -X 3.24 --plummer
+	python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X2_rsfac2p5_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X2_rsfac2p5_5-9_omega.dat -t 64sampling -M 5,9 --dt=1000. -X 2. --rsfac=2.5
+	python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X12p5_rsfacp4_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X12p5_rsfacp4_5-9_omega.dat -t 64sampling -M 5,9 --dt=1000. -X 12.5 --rsfac=0.4

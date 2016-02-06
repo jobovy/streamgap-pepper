@@ -27,7 +27,7 @@ def get_options():
                       help="Number of times rs to consider for the impact parameter")
     parser.add_option("-M",dest='mass',default='6.5',
                       help="Mass or mass range to consider; given as log10(mass)")
-    parser.add_option("--timescdm",dest='timescdm',default=1.,
+    parser.add_option("--timescdm",dest='timescdm',default=1.,type='float',
                       help="Use a rate that is timescdm times the CDM prediction")
     parser.add_option("--rsfac",dest='rsfac',default=1.,type='float',
                       help="Use a r_s(M) relation that is a factor of rsfac different from the fiducial one")

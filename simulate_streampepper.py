@@ -34,6 +34,8 @@ def get_options():
     parser.add_option("--plummer",action="store_true", 
                       dest="plummer",default=False,
                       help="If set, use a Plummer DM profile rather than Hernquist")
+    parser.add_option("--age",dest='age',default=9.,type='float',
+                      help="Age of the stream in Gyr")
     # Parallel angles at which to compute stuff
     parser.add_option("--amin",dest='amin',default=None,
                       type='float',
@@ -98,7 +100,7 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
         denswriter.writerow([a for a in apar])
         omegawriter.writerow([a for a in apar])
         if sdf_smooth is None and options.stream.lower() == 'gd1like':
-            sdf_smooth= gd1_util.setup_gd1model()
+            sdf_smooth= gd1_util.setup_gd1model(age=options.age)
         dens_unp= [sdf_smooth._density_par(a) for a in apar]
         denswriter.writerow(dens_unp)
         omega_unp= [sdf_smooth.meanOmega(a,oned=True) for a in apar]
@@ -152,10 +154,11 @@ if __name__ == '__main__':
     if options.stream.lower() == 'gd1like':
         timpacts= parse_times(options.timpacts)
         sdf_pepper= gd1_util.setup_gd1model(timpact=timpacts,
-                                            hernquist=not options.plummer)
+                                            hernquist=not options.plummer,
+                                            age=options.age)
     # Need smooth?
     if options.amax is None or options.amin is None:
-        sdf_smooth= gd1_util.setup_gd1model()
+        sdf_smooth= gd1_util.setup_gd1model(age=options.age)
     if options.amax is None:
         options.amax= sdf_smooth.length()+options.dapar
     else:

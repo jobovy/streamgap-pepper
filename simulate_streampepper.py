@@ -51,11 +51,11 @@ def get_options():
                       help="Number of minutes to run simulations for")
     return parser
 
-def parse_times(times):
+def parse_times(times,age):
     if 'sampling' in times:
         nsam= int(times.split('sampling')[0])
         return [float(ti)/bovy_conversion.time_in_Gyr(V0,R0)
-                for ti in numpy.arange(1,nsam+1)/(nsam+1.)*9.]
+                for ti in numpy.arange(1,nsam+1)/(nsam+1.)*age]
     return [float(ti)/bovy_conversion.time_in_Gyr(V0,R0)
             for ti in times.split(',')]
 def parse_mass(mass):   
@@ -152,7 +152,7 @@ if __name__ == '__main__':
     options,args= parser.parse_args()
     # Setup 
     if options.stream.lower() == 'gd1like':
-        timpacts= parse_times(options.timpacts)
+        timpacts= parse_times(options.timpacts,options.age)
         sdf_pepper= gd1_util.setup_gd1model(timpact=timpacts,
                                             hernquist=not options.plummer,
                                             age=options.age)

@@ -52,3 +52,11 @@ Commands like::
 	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_cdmp33_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_cdmp33_5-9_omega.dat -t 64sampling -M 5,9 --dt=350. -X 5. --timescdm=0.33333333333
 	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_cdm10_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_cdm10_5-9_omega.dat -t 64sampling -M 5,9 --dt=1000. -X 5. --timescdm=10.
 	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_cdmp1_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_cdmp1_5-9_omega.dat -t 64sampling -M 5,9 --dt=1000. -X 5. --timescdm=0.1
+
+Different age
+--------------
+
+Commands like::
+
+	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_age4p5_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_age4p5_5-9_omega.dat -t 64sampling -M 5,9 --dt=900. -X 5. --age=4.5
+	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_age4p5_cdm2_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_age4p5_cdm2_5-9_omega.dat -t 64sampling -M 5,9 --dt=900. -X 5. --age=4.5 --timescdm=2.

@@ -3,6 +3,7 @@ import os, os.path
 import csv
 import time
 import numpy
+from scipy import integrate
 from optparse import OptionParser
 from galpy.util import bovy_conversion
 import gd1_util
@@ -27,6 +28,8 @@ def get_options():
                       help="Number of times rs to consider for the impact parameter")
     parser.add_option("-M",dest='mass',default='6.5',
                       help="Mass or mass range to consider; given as log10(mass)")
+    parser.add_option("--cutoff",dest='cutoff',default=None,type='float',
+                      help="Log10 mass cut-off in power-spectrum")
     parser.add_option("--timescdm",dest='timescdm',default=1.,type='float',
                       help="Use a rate that is timescdm times the CDM prediction")
     parser.add_option("--rsfac",dest='rsfac',default=1.,type='float',
@@ -73,6 +76,15 @@ def dNencdm(sdf_pepper,m,Xrs=3.,plummer=False,rsfac=1.):
     return sdf_pepper.subhalo_encounters(\
         sigma=120./220.,nsubhalo=nsubhalo(m),
         bmax=Xrs*rs(m,plummer=plummer,rsfac=rsfac))
+def powerlaw_wcutoff(massrange,cutoff):
+    accept= False
+    while not accept:
+        prop= (10.**-(massrange[0]/2.)+(10.**-(massrange[1]/2.)\
+                         -10.**(-massrange[0]/2.))\
+                   *numpy.random.uniform())**-2.
+        if numpy.random.uniform() < numpy.exp(-10.**cutoff/prop):
+            accept= True
+    return prop/bovy_conversion.mass_in_msol(V0,R0)
 
 # Function to run the simulations
 def run_simulations(sdf_pepper,sdf_smooth,options):
@@ -118,16 +130,26 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
                                        rsfac=options.rsfac)
     elif len(massrange) == 2:
         # Sample from power-law
-        sample_GM= lambda: (10.**-(massrange[0]/2.)\
-                                   +(10.**-(massrange[1]/2.)\
-                                         -10.**(-massrange[0]/2.))\
-                                   *numpy.random.uniform())**-2.\
-                                   /bovy_conversion.mass_in_msol(V0,R0)
+        if not options.cutoff is None:
+            sample_GM= lambda: powerlaw_wcutoff(massrange,options.cutoff)
+        else:
+            sample_GM= lambda: (10.**-(massrange[0]/2.)\
+                                    +(10.**-(massrange[1]/2.)\
+                                          -10.**(-massrange[0]/2.))\
+                                    *numpy.random.uniform())**-2.\
+                                    /bovy_conversion.mass_in_msol(V0,R0)
         rate_range= numpy.arange(massrange[0]+0.5,massrange[1]+0.5,1)
         rate= options.timescdm\
             *numpy.sum([dNencdm(sdf_pepper,10.**r,Xrs=options.Xrs,
                                 plummer=options.plummer,rsfac=options.rsfac)
                         for r in rate_range])
+        if not options.cutoff is None:
+            rate*= integrate.quad(lambda x: x**-1.5\
+                                      *numpy.exp(-10.**options.cutoff/x),
+                                  10.**massrange[0],10.**massrange[1])[0]\
+                                  /integrate.quad(lambda x: x**-1.5,
+                                                  10.**massrange[0],
+                                                  10.**massrange[1])[0]
     print "Using an overall rate of %f" % rate
     sample_rs= lambda x: rs(x*bovy_conversion.mass_in_1010msol(V0,R0)*10.**10.,
                             plummer=options.plummer,rsfac=options.rsfac)

@@ -60,3 +60,13 @@ Commands like::
 
 	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_age4p5_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_age4p5_5-9_omega.dat -t 64sampling -M 5,9 --dt=900. -X 5. --age=4.5
 	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_age4p5_cdm2_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_age4p5_cdm2_5-9_omega.dat -t 64sampling -M 5,9 --dt=900. -X 5. --age=4.5 --timescdm=2.
+
+CDM spectrum w/ cut-off
+-----------------------
+
+Commands like::
+
+	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_cutoff5p5_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_cutoff5p5_5-9_omega.dat -t 64sampling -M 5,9 --dt=800. -X 5. --cutoff=5.5
+	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_cutoff6p5_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_cutoff6p5_5-9_omega.dat -t 64sampling -M 5,9 --dt=800. -X 5. --cutoff=6.5
+	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_cutoff7p5_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_cutoff7p5_5-9_omega.dat -t 64sampling -M 5,9 --dt=800. -X 5. --cutoff=7.5
+

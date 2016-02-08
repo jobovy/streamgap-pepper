@@ -30,6 +30,8 @@ def get_options():
                       help="Mass or mass range to consider; given as log10(mass)")
     parser.add_option("--cutoff",dest='cutoff',default=None,type='float',
                       help="Log10 mass cut-off in power-spectrum")
+    parser.add_option("--massexp",dest='massexp',default=-2.,type='float',
+                      help="Exponent of the mass spectrum (doesn't work with cutoff)")
     parser.add_option("--timescdm",dest='timescdm',default=1.,type='float',
                       help="Use a rate that is timescdm times the CDM prediction")
     parser.add_option("--rsfac",dest='rsfac',default=1.,type='float',
@@ -132,11 +134,16 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
         # Sample from power-law
         if not options.cutoff is None:
             sample_GM= lambda: powerlaw_wcutoff(massrange,options.cutoff)
+        elif numpy.fabs(options.massexp+1.5) < 10.**-6.:
+            sample_GM= lambda: 10.**(massrange[0]\
+                                         +(massrange[1]-massrange[0])\
+                                         *numpy.random.uniform())\
+                                         /bovy_conversion.mass_in_msol(V0,R0)
         else:
-            sample_GM= lambda: (10.**-(massrange[0]/2.)\
-                                    +(10.**-(massrange[1]/2.)\
-                                          -10.**(-massrange[0]/2.))\
-                                    *numpy.random.uniform())**-2.\
+            sample_GM= lambda: (10.**((options.massexp+1.5)*massrange[0])\
+                                    +(10.**((options.massexp+1.5)*massrange[1])\
+                                          -10.**((options.massexp+1.5)*massrange[0]))\
+                                    *numpy.random.uniform())**(1./(options.massexp+1.5))\
                                     /bovy_conversion.mass_in_msol(V0,R0)
         rate_range= numpy.arange(massrange[0]+0.5,massrange[1]+0.5,1)
         rate= options.timescdm\

@@ -166,10 +166,17 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
         sdf_pepper.simulate(rate=rate,sample_GM=sample_GM,sample_rs=sample_rs,
                             Xrs=options.Xrs)
         # Compute density and meanOmega and save
-        densOmega= numpy.array([sdf_pepper._densityAndOmega_par_approx(a)
-                                for a in apar]).T
-        denswriter.writerow(list(densOmega[0]))
-        omegawriter.writerow(list(densOmega[1]))
+        try:
+            densOmega= numpy.array([sdf_pepper._densityAndOmega_par_approx(a)
+                                    for a in apar]).T
+        except IndexError: # no hit
+            dens_unp= [sdf_smooth._density_par(a) for a in apar]
+            omega_unp= [sdf_smooth.meanOmega(a,oned=True) for a in apar]
+            denswriter.writerow(dens_unp)
+            omegawriter.writerow(omega_unp)
+        else:
+            denswriter.writerow(list(densOmega[0]))
+            omegawriter.writerow(list(densOmega[1]))
         csvdens.flush()
         csvomega.flush()
     csvdens.close()

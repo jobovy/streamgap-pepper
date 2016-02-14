@@ -1,4 +1,4 @@
-from galpy.df import streamdf
+from galpy.df import streamdf, streamgapdf
 from galpy.df_src.streampepperdf import streampepperdf
 from galpy.orbit import Orbit
 from galpy.potential import LogarithmicHaloPotential
@@ -8,7 +8,9 @@ R0, V0= 8., 220.
 def setup_gd1model(leading=True,
                    timpact=None,
                    hernquist=True,
-                   age=9.):
+                   age=9.,
+                   singleImpact=False,
+                   **kwargs):
     lp= LogarithmicHaloPotential(normalize=1.,q=0.9)
     aAI= actionAngleIsochroneApprox(pot=lp,b=0.8)
     obs= Orbit([1.56148083,0.35081535,-1.15481504,0.88719443,
@@ -19,6 +21,15 @@ def setup_gd1model(leading=True,
                       nTrackChunks=11,
                       tdisrupt=age/bovy_conversion.time_in_Gyr(V0,R0),
                       Vnorm=V0,Rnorm=R0)
+    elif singleImpact:
+        sdf= streamgapdf(sigv/220.,progenitor=obs,pot=lp,aA=aAI,
+                         leading=leading,
+                         nTrackChunks=11,
+                         tdisrupt=age/bovy_conversion.time_in_Gyr(V0,R0),
+                         Vnorm=V0,Rnorm=R0,
+                         timpact=timpact,
+                         spline_order=3,
+                         hernquist=hernquist,**kwargs)
     else:
         sdf= streampepperdf(sigv/220.,progenitor=obs,pot=lp,aA=aAI,
                             leading=leading,

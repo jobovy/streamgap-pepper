@@ -33,7 +33,7 @@ def setup_gd1model(leading=True,
     else:
         sdf= streampepperdf(sigv/220.,progenitor=obs,pot=lp,aA=aAI,
                             leading=leading,
-                            nTrackChunks=11,
+                            nTrackChunks=101,
                             tdisrupt=age/bovy_conversion.time_in_Gyr(V0,R0),
                             Vnorm=V0,Rnorm=R0,
                             timpact=timpact,

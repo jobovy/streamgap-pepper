@@ -10,6 +10,7 @@ def setup_gd1model(leading=True,
                    hernquist=True,
                    age=9.,
                    singleImpact=False,
+                   length_factor=1.,
                    **kwargs):
     lp= LogarithmicHaloPotential(normalize=1.,q=0.9)
     aAI= actionAngleIsochroneApprox(pot=lp,b=0.8)
@@ -38,5 +39,6 @@ def setup_gd1model(leading=True,
                             Vnorm=V0,Rnorm=R0,
                             timpact=timpact,
                             spline_order=1,
-                            hernquist=hernquist)
+                            hernquist=hernquist,
+                            length_factor=length_factor)
     return sdf

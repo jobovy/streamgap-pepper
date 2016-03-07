@@ -26,6 +26,9 @@ def get_options():
     parser.add_option("-X",dest='Xrs',default=3.,
                       type='float',
                       help="Number of times rs to consider for the impact parameter")
+    parser.add_option("-l",dest='length_factor',default=1.,
+                      type='float',
+                      help="length_factor input to streampepperdf (consider impacts to length_factor x length)")
     parser.add_option("-M",dest='mass',default='6.5',
                       help="Mass or mass range to consider; given as log10(mass)")
     parser.add_option("--cutoff",dest='cutoff',default=None,type='float',
@@ -191,7 +194,8 @@ if __name__ == '__main__':
         timpacts= parse_times(options.timpacts,options.age)
         sdf_pepper= gd1_util.setup_gd1model(timpact=timpacts,
                                             hernquist=not options.plummer,
-                                            age=options.age)
+                                            age=options.age,
+                                            length_factor=options.length_factor)
     # Need smooth?
     if options.amax is None or options.amin is None:
         sdf_smooth= gd1_util.setup_gd1model(age=options.age)

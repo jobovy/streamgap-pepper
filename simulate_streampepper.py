@@ -7,6 +7,7 @@ from scipy import integrate
 from optparse import OptionParser
 from galpy.util import bovy_conversion
 import gd1_util
+import pal5_util
 from gd1_util import R0,V0
 _DATADIR= os.getenv('DATADIR')
 def get_options():
@@ -118,6 +119,8 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
         omegawriter.writerow([a for a in apar])
         if sdf_smooth is None and options.stream.lower() == 'gd1like':
             sdf_smooth= gd1_util.setup_gd1model(age=options.age)
+        elif sdf_smooth is None and options.stream.lower() == 'pal5like':
+            sdf_smooth= pal5_util.setup_pal5model(age=options.age)
         dens_unp= [sdf_smooth._density_par(a) for a in apar]
         denswriter.writerow(dens_unp)
         omega_unp= [sdf_smooth.meanOmega(a,oned=True) for a in apar]
@@ -196,9 +199,18 @@ if __name__ == '__main__':
                                             hernquist=not options.plummer,
                                             age=options.age,
                                             length_factor=options.length_factor)
+    elif options.stream.lower() == 'pal5like':
+        timpacts= parse_times(options.timpacts,options.age)
+        sdf_pepper= pal5_util.setup_pal5model(timpact=timpacts,
+                                              hernquist=not options.plummer,
+                                              age=options.age,
+                                              length_factor=options.length_factor)
     # Need smooth?
     if options.amax is None or options.amin is None:
-        sdf_smooth= gd1_util.setup_gd1model(age=options.age)
+        if options.stream.lower() == 'gd1like':
+            sdf_smooth= gd1_util.setup_gd1model(age=options.age)
+        else:
+            sdf_smooth= gd1_util.setup_pal5model(age=options.age)
     if options.amax is None:
         options.amax= sdf_smooth.length()+options.dapar
     else:

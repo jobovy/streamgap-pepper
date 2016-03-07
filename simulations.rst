@@ -27,6 +27,13 @@ Commands like::
 
 	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_6.5_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_6.5_omega.dat -t 64sampling -M 6.5 --dt=10. -X 5.
 
+Length factor
+--------------
+
+Commands like::
+
+	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_lf1p25_6.5_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_lf1p25_6.5_omega.dat -t 64sampling -M 6.5 --dt=10. -X 5. -l 1.25 --timescdm=1.25
+
 Full mass range
 ---------------
 
@@ -77,3 +84,11 @@ Commands like::
 
 	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_massexpm1p5_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_massexpm1p5_5-9_omega.dat -t 64sampling -M 5,9 --dt=800. -X 5. --massexp=-1.5
 	 python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_massexpm2p5_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/gd1_multtime/gd1_t64sampling_X5_massexpm2p5_5-9_omega.dat -t 64sampling -M 5,9 --dt=800. -X 5. --massexp=-2.5
+
+Pal 5
+------
+
+Do::
+
+	python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/pal5_multtime/pal5_t64sampling_X5_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/pal5_multtime/pal5_t64sampling_X5_5-9_omega.dat -t 64sampling -M 5,9 --dt=350. -X 5. -s pal5like --age=5.
+

@@ -9,6 +9,10 @@ class streamdf_jason(galpy.df_src.streamdf.streamdf):
 class streamgapdf_jason(galpy.df_src.streamgapdf.streamgapdf):
     def _sample_aAt(self,n):
         return custom_sample_aAt_gap(self,n)
+class streamgapdf_jason_onlyopar(galpy.df_src.streamgapdf.streamgapdf):
+    """Same as above, but only apply dOmega kick"""
+    def _sample_aAt(self,n):
+        return custom_sample_aAt_gap_onlyopar(self,n)
 
 def custom_sample_aAt(sdf,n):
     """Custom time and frequency sampling based on Jason's investigations of Denis' simulations"""
@@ -75,5 +79,23 @@ def custom_sample_aAt_gap(sdf,n):
         sdf._kick_interpdap(dangle_par_at_impact)+dOp*sdf._timpact
     angle[2,:]+=\
         sdf._kick_interpdaz(dangle_par_at_impact)+dOz*sdf._timpact
+    return (Om,angle,dt)
+        
+def custom_sample_aAt_gap_onlyopar(sdf,n):
+    Om,angle,dt= custom_sample_aAt(sdf,n)
+    # Copied from streamgapdf
+    # Now rewind angles by timpact, apply the kicks, and run forward again
+    dangle_at_impact= angle-numpy.tile(sdf._progenitor_angle.T,(n,1)).T\
+        -(Om-numpy.tile(sdf._progenitor_Omega.T,(n,1)).T)*sdf._timpact
+    dangle_par_at_impact= numpy.dot(dangle_at_impact.T,
+                                    sdf._dsigomeanProgDirection)\
+                                    *sdf._gap_sigMeanSign
+    # Calculate and apply kicks (points not yet released have zero kick)
+    dO= (numpy.tile(sdf._kick_interpdOpar(dangle_par_at_impact),
+                    (3,1))
+         *numpy.tile(sdf._dsigomeanProgDirection,(n,1)).T
+         *sdf._gap_sigMeanSign)
+    Om+= dO 
+    angle+= dO*sdf._timpact
     return (Om,angle,dt)
         

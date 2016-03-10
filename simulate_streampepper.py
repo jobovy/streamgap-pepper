@@ -210,11 +210,11 @@ if __name__ == '__main__':
         if options.stream.lower() == 'gd1like':
             sdf_smooth= gd1_util.setup_gd1model(age=options.age)
         else:
-            sdf_smooth= gd1_util.setup_pal5model(age=options.age)
-    if options.amax is None:
-        options.amax= sdf_smooth.length()+options.dapar
+            sdf_smooth= pal5_util.setup_pal5model(age=options.age)
     else:
         sdf_smooth= None
+    if options.amax is None:
+        options.amax= sdf_smooth.length()+options.dapar
     if options.amin is None:
         options.amin= 2.*sdf_smooth.meanOmega(0.1,oned=True)\
             *numpy.amin(numpy.array(timpacts))

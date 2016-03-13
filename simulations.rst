@@ -90,5 +90,5 @@ Pal 5
 
 Do::
 
-	python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/pal5_multtime/pal5_t64sampling_X5_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/pal5_multtime/pal5_t64sampling_X5_5-9_omega.dat -t 64sampling -M 5,9 --dt=350. -X 5. -s pal5like --age=5.
+	python simulate_streampepper.py --outdens=$DATADIR/bovy/streamgap-pepper/pal5_multtime/pal5_t64sampling_X5_5-9_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/pal5_multtime/pal5_t64sampling_X5_5-9_omega.dat -t 64sampling -M 5,9 --dt=350. -X 5. -s pal5like --age=5. --amax=1.75 --da=0.01
 

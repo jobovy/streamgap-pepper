@@ -1,6 +1,7 @@
 # custom_stripping_df.py: streamgapdf for Jason's custom stripping time distribution
 import numpy
 import galpy.df_src.streamgapdf
+import galpy.df_src.streampepperdf
 import galpy.df_src.streamdf
 from galpy.util import bovy_conversion
 class streamdf_jason(galpy.df_src.streamdf.streamdf):
@@ -9,6 +10,17 @@ class streamdf_jason(galpy.df_src.streamdf.streamdf):
 class streamgapdf_jason(galpy.df_src.streamgapdf.streamgapdf):
     def _sample_aAt(self,n):
         return custom_sample_aAt_gap(self,n)
+class streamgapdf_jason_onlyopar(galpy.df_src.streamgapdf.streamgapdf):
+    """Same as above, but only apply dOmega kick"""
+    def _sample_aAt(self,n):
+        return custom_sample_aAt_gap_onlyopar(self,n)
+class streampepperdf_jason(galpy.df_src.streampepperdf.streampepperdf):
+    def _sample_aAt(self,n):
+        return custom_sample_aAt_pepper(self,n)
+class streampepperdf_jason_onlyopar(galpy.df_src.streampepperdf.streampepperdf):
+    """Same as above, but only apply dOmega kick"""
+    def _sample_aAt(self,n):
+        return custom_sample_aAt_pepper_onlyopar(self,n)
 
 def custom_sample_aAt(sdf,n):
     """Custom time and frequency sampling based on Jason's investigations of Denis' simulations"""
@@ -77,3 +89,99 @@ def custom_sample_aAt_gap(sdf,n):
         sdf._kick_interpdaz(dangle_par_at_impact)+dOz*sdf._timpact
     return (Om,angle,dt)
         
+def custom_sample_aAt_gap_onlyopar(sdf,n):
+    Om,angle,dt= custom_sample_aAt(sdf,n)
+    # Copied from streamgapdf
+    # Now rewind angles by timpact, apply the kicks, and run forward again
+    dangle_at_impact= angle-numpy.tile(sdf._progenitor_angle.T,(n,1)).T\
+        -(Om-numpy.tile(sdf._progenitor_Omega.T,(n,1)).T)*sdf._timpact
+    dangle_par_at_impact= numpy.dot(dangle_at_impact.T,
+                                    sdf._dsigomeanProgDirection)\
+                                    *sdf._gap_sigMeanSign
+    # Calculate and apply kicks (points not yet released have zero kick)
+    dO= (numpy.tile(sdf._kick_interpdOpar(dangle_par_at_impact),
+                    (3,1))
+         *numpy.tile(sdf._dsigomeanProgDirection,(n,1)).T
+         *sdf._gap_sigMeanSign)
+    Om+= dO 
+    angle+= dO*sdf._timpact
+    return (Om,angle,dt)
+        
+def custom_sample_aAt_pepper(sdf,n):
+    Om,angle,dt= custom_sample_aAt(sdf,n)
+    # Copied from streampepperdf
+    # Now rewind angles to the first impact, then apply all kicks,          
+    # and run forward again                                                 
+    dangle_at_impact= angle-numpy.tile(sdf._progenitor_angle.T,(n,1)).T\
+        -(Om-numpy.tile(sdf._progenitor_Omega.T,(n,1)).T)\
+        *sdf._timpact[-1]
+    dangle_par_at_impact=\
+        numpy.dot(dangle_at_impact.T,
+                  sdf._dsigomeanProgDirection)\
+                  *sdf._sgapdfs[-1]._gap_sigMeanSign
+    dOpar= numpy.dot((Om-numpy.tile(sdf._progenitor_Omega.T,(n,1)).T).T,
+                     sdf._dsigomeanProgDirection)\
+                     *sdf._sgapdfs[-1]._gap_sigMeanSign
+    for kk,timpact in enumerate(sdf._timpact[::-1]):
+        # Calculate and apply kicks (points not yet released have           
+        # zero kick)                                                        
+        dOr= sdf._sgapdfs[-kk-1]._kick_interpdOr(dangle_par_at_impact)
+        dOp= sdf._sgapdfs[-kk-1]._kick_interpdOp(dangle_par_at_impact)
+        dOz= sdf._sgapdfs[-kk-1]._kick_interpdOz(dangle_par_at_impact)
+        Om[0,:]+= dOr
+        Om[1,:]+= dOp
+        Om[2,:]+= dOz
+        if kk < len(sdf._timpact)-1:
+            run_to_timpact= sdf._timpact[::-1][kk+1]
+        else:
+            run_to_timpact= 0.
+        angle[0,:]+=\
+            sdf._sgapdfs[-kk-1]._kick_interpdar(dangle_par_at_impact)\
+            +dOr*timpact
+        angle[1,:]+=\
+            sdf._sgapdfs[-kk-1]._kick_interpdap(dangle_par_at_impact)\
+            +dOp*timpact
+        angle[2,:]+=\
+            sdf._sgapdfs[-kk-1]._kick_interpdaz(dangle_par_at_impact)\
+            +dOz*timpact
+        # Update parallel evolution                                         
+        dOpar+=\
+            sdf._sgapdfs[-kk-1]._kick_interpdOpar(dangle_par_at_impact)
+        dangle_par_at_impact+= dOpar*(timpact-run_to_timpact)
+    return (Om,angle,dt)
+
+def custom_sample_aAt_pepper_onlyopar(sdf,n):
+    Om,angle,dt= custom_sample_aAt(sdf,n)
+    # Copied from streampepperdf
+    # Now rewind angles to the first impact, then apply all kicks,          
+    # and run forward again                                                 
+    dangle_at_impact= angle-numpy.tile(sdf._progenitor_angle.T,(n,1)).T\
+        -(Om-numpy.tile(sdf._progenitor_Omega.T,(n,1)).T)\
+        *sdf._timpact[-1]
+    dangle_par_at_impact=\
+        numpy.dot(dangle_at_impact.T,
+                  sdf._dsigomeanProgDirection)\
+                  *sdf._sgapdfs[-1]._gap_sigMeanSign
+    dOpar= numpy.dot((Om-numpy.tile(sdf._progenitor_Omega.T,(n,1)).T).T,
+                     sdf._dsigomeanProgDirection)\
+                     *sdf._sgapdfs[-1]._gap_sigMeanSign
+    for kk,timpact in enumerate(sdf._timpact[::-1]):
+        # Calculate and apply kicks (points not yet released have           
+        # zero kick)                                                        
+        dO= (numpy.tile(\
+                sdf._sgapdfs[-kk-1]._kick_interpdOpar(dangle_par_at_impact),
+                (3,1))
+             *numpy.tile(sdf._dsigomeanProgDirection,(n,1)).T
+             *sdf._sgapdfs[-kk-1]._gap_sigMeanSign)
+        Om+= dO 
+        if kk < len(sdf._timpact)-1:
+            run_to_timpact= sdf._timpact[::-1][kk+1]
+        else:
+            run_to_timpact= 0.
+        angle+= dO*timpact
+        # Update parallel evolution                                         
+        dOpar+=\
+            sdf._sgapdfs[-kk-1]._kick_interpdOpar(dangle_par_at_impact)
+        dangle_par_at_impact+= dOpar*(timpact-run_to_timpact)
+    return (Om,angle,dt)
+

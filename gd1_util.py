@@ -1,5 +1,5 @@
 from galpy.df import streamdf, streamgapdf
-from galpy.df_src.streampepperdf import streampepperdf
+from streampepperdf import streampepperdf
 from galpy.orbit import Orbit
 from galpy.potential import LogarithmicHaloPotential
 from galpy.actionAngle import actionAngleIsochroneApprox

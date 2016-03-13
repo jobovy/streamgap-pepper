@@ -3,7 +3,7 @@ from galpy.potential import MWPotential2014
 from galpy.actionAngle import actionAngleIsochroneApprox
 from galpy.orbit import Orbit
 from galpy.df import streamdf, streamgapdf
-from galpy.df_src.streampepperdf import streampepperdf
+from streampepperdf import streampepperdf
 from galpy.util import bovy_conversion, bovy_coords
 from gd1_util import R0, V0
 # Coordinate transformation routines

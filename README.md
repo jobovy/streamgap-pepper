@@ -73,3 +73,11 @@ invocation for many of the simulations that were run.
 This notebook contains comparisons between the simplified action-angle
 modeling used in this paper and full N-body simulations with single
 and multiple impacts.
+
+## AUTHORS
+
+Jo Bovy - bovy at astro dot utoronto dot edu
+
+Denis Erkal - derkal at ast dot cam dot ac dot uk
+
+Jason Sanders - jls at ast dot cam dot ac dot uk

@@ -62,7 +62,9 @@ track's location in the sky, distance, and line-of-sight velocity).
 
 All simulations are run using the code in
 [simulate_streampepper.py](simulate_streampepper.py). This script has
-a help function that explains its use.
+a help function that explains its use. The notes at
+[simulations.rst](simulations.rst) give some examples of its
+invocation for many of the simulations that were run.
 
 ## 6. [CompareNbodySimulations.ipynb](CompareNbodySimulations.ipynb)
 

@@ -1,7 +1,7 @@
 # custom_stripping_df.py: streamgapdf for Jason's custom stripping time distribution
 import numpy
 import galpy.df_src.streamgapdf
-import galpy.df_src.streampepperdf
+import streampepperdf
 import galpy.df_src.streamdf
 from galpy.util import bovy_conversion
 class streamdf_jason(galpy.df_src.streamdf.streamdf):
@@ -14,10 +14,10 @@ class streamgapdf_jason_onlyopar(galpy.df_src.streamgapdf.streamgapdf):
     """Same as above, but only apply dOmega kick"""
     def _sample_aAt(self,n):
         return custom_sample_aAt_gap_onlyopar(self,n)
-class streampepperdf_jason(galpy.df_src.streampepperdf.streampepperdf):
+class streampepperdf_jason(streampepperdf.streampepperdf):
     def _sample_aAt(self,n):
         return custom_sample_aAt_pepper(self,n)
-class streampepperdf_jason_onlyopar(galpy.df_src.streampepperdf.streampepperdf):
+class streampepperdf_jason_onlyopar(streampepperdf.streampepperdf):
     """Same as above, but only apply dOmega kick"""
     def _sample_aAt(self,n):
         return custom_sample_aAt_pepper_onlyopar(self,n)

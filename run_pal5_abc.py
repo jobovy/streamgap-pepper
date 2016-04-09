@@ -1,0 +1,285 @@
+# run_pal5_abc.py: simple ABC method for constraining Nsubhalo from Pal 5 data
+import os, os.path
+import csv
+import time
+import pickle
+from optparse import OptionParser
+import numpy
+from numpy.polynomial import Polynomial
+from scipy import interpolate, signal
+from galpy.util import save_pickles, bovy_conversion
+import simulate_streampepper
+import pal5_util
+from gd1_util import R0,V0
+_DATADIR= os.getenv('DATADIR')
+def get_options():
+    usage = "usage: %prog [options]"
+    parser = OptionParser(usage=usage)
+    # stream
+    parser.add_option("-s",dest='streamsavefilename',
+                      default=None,
+                      help="Filename to save the streampepperdf object in")
+    # savefilenames
+    parser.add_option("--outdens",dest='outdens',default=None,
+                      help="Name of the output file for the density")
+    parser.add_option("--outomega",dest='outomega',default=None,
+                      help="Name of the output file for the mean Omega")
+    parser.add_option("-o","--abcfile",dest='abcfile',default=None,
+                      help="Name of the output file for the ABC")
+    parser.add_option("-b","--batch",dest='batch',default=None,
+                      type='int',
+                      help="If running batches of ABC simulations, batch number")
+    # Parameters of the subhalos simulation
+    parser.add_option("-t","--timpacts",dest='timpacts',default='256sampling',
+                      help="Impact times in Gyr to consider; should be a comma separated list")
+    parser.add_option("-X",dest='Xrs',default=5.,
+                      type='float',
+                      help="Number of times rs to consider for the impact parameter")
+    parser.add_option("-l",dest='length_factor',default=1.,
+                      type='float',
+                      help="length_factor input to streampepperdf (consider impacts to length_factor x length)")
+    parser.add_option("-M",dest='mass',default='6.5',
+                      help="Mass or mass range to consider; given as log10(mass)")
+    parser.add_option("--rsfac",dest='rsfac',default=1.,type='float',
+                      help="Use a r_s(M) relation that is a factor of rsfac different from the fiducial one")
+    parser.add_option("--plummer",action="store_true", 
+                      dest="plummer",default=False,
+                      help="If set, use a Plummer DM profile rather than Hernquist")
+    parser.add_option("--age",dest='age',default=9.,type='float',
+                      help="Age of the stream in Gyr")
+    # Parallel angles at which to compute stuff
+    parser.add_option("--amin",dest='amin',default=0.,
+                      type='float',
+                      help="Minimum parallel angle to consider")
+    parser.add_option("--amax",dest='amax',default=1.75,
+                      type='float',
+                      help="Maximum parallel angle to consider (default: 2*meandO*mintimpact)")
+    parser.add_option("--da",dest='dapar',default=0.01,
+                      type='float',
+                      help="Step in apar to use")
+    # Data handling and continuum normalization
+    parser.add_option("--polydeg",dest='polydeg',default=0,
+                      type='int',
+                      help="Polynomial order to fit to smooth stream density")
+    parser.add_option("--minxi",dest='minxi',default=4.,
+                      type='float',
+                      help="Minimum xi to consider")   
+    parser.add_option("--maxxi",dest='maxxi',default=14.35,
+                      type='float',
+                      help="Maximum xi to consider")   
+    # Parameters of the ABC simulation
+    parser.add_option("--ratemin",dest='ratemin',default=-1.,
+                      type='float',
+                      help="Minimum rate compared to CDM expectation; in log10")
+    parser.add_option("--ratemax",dest='ratemax',default=1.,
+                      type='float',
+                      help="Maximum rate compared to CDM expectation; in log10")
+    parser.add_option("--dt",dest='dt',default=60.,
+                      type='float',
+                      help="Number of minutes to run simulations for")
+    return parser
+
+# Convert track to xi, eta
+def convert_dens_to_obs(sdf_pepper,apars,
+                        dens,mO,poly_deg=3,minxi=0.25,maxxi=14.35):
+    """
+    NAME:
+        convert_dens_to_obs
+    PURPOSE:
+        Convert track to observed coordinates
+    INPUT:
+        sdf_pepper - streampepperdf object
+        apars - parallel angles
+        dens - density(apars)
+        mO= (None) mean parallel frequency (1D) 
+            [needs to be set to get density on same grid as track]
+        poly_deg= (3) degree of the polynomial to fit for the 'smooth' stream
+        minxi= (0.25) minimum xi to consider
+    OUTPUT:
+        (xi,dens/smooth)
+    """
+    mT= sdf_pepper.meanTrack(apars,_mO=mO,coord='lb')
+    outll= numpy.arange(minxi,maxxi,0.1)
+    # Interpolate density
+    ipll= interpolate.InterpolatedUnivariateSpline(mT[0],apars)
+    ipdens= interpolate.InterpolatedUnivariateSpline(apars,dens)
+    try:
+        pp= Polynomial.fit(outll,ipdens(ipll(outll)),deg=poly_deg)
+    except ValueError:
+        # Fails for constant when no hits
+        pp= lambda x: dens[5]
+    return (outll,ipdens(ipll(outll))/pp(outll))
+
+def setup_densOmegaWriter(apar,options):
+    outdens= options.outdens
+    outomega= options.outomega
+    if not options.batch is None:
+        outdens= outdens.replace('.dat','%i.dat' % options.batch)
+    if not options.batch is None:
+        outomega= outomega.replace('.dat','%i.dat' % options.batch)
+    if os.path.exists(outdens):
+        # First read the file to check apar
+        apar_file= numpy.genfromtxt(outdens,delimiter=',',max_rows=1)
+        assert numpy.amax(numpy.fabs(apar_file-apar)) < 10.**-5., 'apar according to options does not correspond to apar already in outdens'
+        apar_file= numpy.genfromtxt(outomega,delimiter=',',max_rows=1)
+        assert numpy.amax(numpy.fabs(apar_file-apar)) < 10.**-5., 'apar according to options does not correspond to apar already in outomega'
+        csvdens= open(outdens,'a')
+        csvomega= open(outomega,'a')       
+        denswriter= csv.writer(csvdens,delimiter=',')
+        omegawriter= csv.writer(csvomega,delimiter=',')
+    else:
+        csvdens= open(outdens,'w')
+        csvomega= open(outomega,'w')
+        denswriter= csv.writer(csvdens,delimiter=',')
+        omegawriter= csv.writer(csvomega,delimiter=',')
+        # First write apar and the smooth calculations
+        denswriter.writerow([a for a in apar])
+        omegawriter.writerow([a for a in apar])
+        csvdens.flush()
+        csvomega.flush()
+    return (denswriter,omegawriter,csvdens,csvomega)
+
+def process_pal5_densdata(options):
+    # Read and prep data
+    backg= 400.
+    data= numpy.loadtxt('data/ibata_fig7b_raw.dat',delimiter=',')
+    sindx= numpy.argsort(data[:,0])
+    data= data[sindx]
+    data_lowerr= numpy.loadtxt('data/ibata_fig7b_rawlowerr.dat',delimiter=',')
+    sindx= numpy.argsort(data_lowerr[:,0])
+    data_lowerr= data_lowerr[sindx]
+    data_uperr= numpy.loadtxt('data/ibata_fig7b_rawuperr.dat',delimiter=',')
+    sindx= numpy.argsort(data_uperr[:,0])
+    data_uperr= data_uperr[sindx]
+    data_err= 0.5*(data_uperr-data_lowerr)
+    # CUTS
+    indx= (data[:,0] > options.minxi-0.05)*(data[:,0] < options.maxxi)
+    data= data[indx]
+    data_lowerr= data_lowerr[indx]
+    data_uperr= data_uperr[indx]
+    data_err= data_err[indx]
+    # Compute power spectrum
+    tdata= data[:,1]-backg
+    pp= Polynomial.fit(data[:,0],tdata,deg=options.poly_deg,w=1./data_err[:,1])
+    tdata/= pp(data[:,0])
+    ll= data[:,0]
+    py= signal.csd(tdata,tdata,fs=1./(ll[1]-ll[0]),scaling='spectrum',
+                   nperseg=len(ll))[1]
+    py= py.real
+    return numpy.sqrt(py*(ll[-1]-ll[0]))
+
+def pal5_abc(sdf_pepper,sdf_smooth,options):
+    """
+    """
+    # Setup apar grid
+    apar= numpy.arange(options.amin,options.amax,options.dapar)
+    # Setup saving of the densities and mean Omegas
+    denswriter, omegawriter, csvdens, csvomega=\
+        setup_densOmegaWriter(apar,options)
+    # Setup sampling
+    massrange= simulate_streampepper.parse_mass(options.mass)
+    rs= simulate_streampepper.rs
+    sample_GM= lambda: (10.**((-0.5)*massrange[0])\
+                            +(10.**((-0.5)*massrange[1])\
+                                  -10.**((-0.5)*massrange[0]))\
+                            *numpy.random.uniform())**(1./(-0.5))\
+                            /bovy_conversion.mass_in_msol(V0,R0)
+    sample_rs= lambda x: rs(x*bovy_conversion.mass_in_1010msol(V0,R0)*10.**10.,
+                            plummer=options.plummer)
+    rate_range= numpy.arange(massrange[0]+0.5,massrange[1]+0.5,1)
+    cdmrate= numpy.sum([simulate_streampepper.\
+                            dNencdm(sdf_pepper,10.**r,Xrs=options.Xrs,
+                                    plummer=options.plummer,
+                                    rsfac=options.rsfac)
+                        for r in rate_range])
+    print "Using an overall CDM rate of %f" % cdmrate
+    # Load Pal 5 data to compare to
+    power_data= process_pal5_densdata()
+    # Run ABC
+    while True:
+        # Simulate a rate
+        rate= 10.**(numpy.random.uniform()*(options.ratemax-options.ratemin)
+                    +options.ratemin)*cdmrate
+        # Simulate
+        sdf_pepper.simulate(rate=rate,sample_GM=sample_GM,sample_rs=sample_rs,
+                            Xrs=options.Xrs)
+        # Compute density and meanOmega and save
+        try:
+            densOmega= numpy.array([sdf_pepper._densityAndOmega_par_approx(a)
+                                    for a in apar]).T
+        except IndexError: # no hit
+            dens_unp= numpy.array([sdf_smooth._density_par(a) for a in apar])
+            omega_unp= numpy.array([sdf_smooth.meanOmega(a,oned=True) for a in apar])
+        else:
+            dens_unp= densOmega[0]
+            omega_unp= densOmega[1]
+        write_dens_unp= [numpy.log10(rate)]
+        write_omega_unp= [numpy.log10(rate)]
+        write_dens_unp.extend(list(dens_unp))
+        write_omega_unp.extend(list(omega_unp))
+        denswriter.writerow(write_dens_unp)
+        omegawriter.writerow(write_omega_unp)
+        csvdens.flush()
+        csvomega.flush()
+        # Convert density to observed density
+        xixi,tdens= convert_dens_to_obs(sdf_pepper,apar,
+                                        dens_unp,omega_unp,
+                                        poly_deg=options.poly_deg,
+                                        minxi=options.minxi,
+                                        maxxi=options.maxxi)
+        # Compute power spectrum
+        tcsd= signal.csd(tdens,tdens,fs=1./(xixi[1]-xixi[0]),
+                       scaling='spectrum',nperseg=len(xixi))[1].real
+        power= numpy.sqrt(tcsd*(xixi[-1]-xixi[0]))
+        yield (numpy.log10(rate),
+               numpy.fabs(power[1]-power_data[1]),
+               numpy.fabs(power[2]-power_data[2]))
+
+def abcsims(sdf_pepper,sdf_smooth,options):
+    """
+    NAME:
+       abcsims
+    PURPOSE:
+       Run a bunch of ABC simulations
+    INPUT:
+       sdf_pepper - streampepperdf object to compute peppering
+       sdf_smooth - streamdf object for smooth stream
+       options - the options dictionary
+    OUTPUT:
+       (none; just saves the simulations to a file)
+    HISTORY:
+       2016-04-08 - Written - Bovy (UofT)
+    """
+    print("Running ABC sims ...")
+    if os.path.exists(options.abcfile):
+        # First read the file to check apar
+        csvabc= open(options.abcfile,'a')
+        abcwriter= csv.writer(csvabc,delimiter=',')
+    else:
+        csvabc= open(options.abcfile,'w')
+        abcwriter= csv.writer(csvabc,delimiter=',')
+    start= time.time()
+    for sim in pal5_abc(sdf_pepper,sdf_smooth,options):
+        abcwriter.writerow(list(sim))
+        abcwriter.flush()
+        if (time.time()-start) > options.dt*60.: break
+    return None
+
+if __name__ == '__main__':
+    parser= get_options()
+    options,args= parser.parse_args()
+    # Setup the streampepperdf object
+    if not os.path.exists(options.streamsavefilename):
+        timpacts= simulate_streampepper.parse_times(\
+            options.timpacts,options.age)
+        sdf_smooth= pal5_util.setup_pal5model(age=options.age)
+        sdf_pepper= pal5_util.setup_pal5model(timpact=timpacts,
+                                              hernquist=not options.plummer,
+                                              age=options.age,
+                                              length_factor=options.length_factor)
+        save_pickles(options.streamsavefilename,sdf_smooth,sdf_pepper)
+    else:
+        with open(options.streamsavefilename,'rb') as savefile:
+            sdf_smooth= pickle.load(savefile)
+            sdf_pepper= pickle.load(savefile)
+    abcsims(sdf_pepper,sdf_smooth,options)

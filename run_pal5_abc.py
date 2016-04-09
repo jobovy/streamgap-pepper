@@ -38,7 +38,7 @@ def get_options():
     parser.add_option("-l",dest='length_factor',default=1.,
                       type='float',
                       help="length_factor input to streampepperdf (consider impacts to length_factor x length)")
-    parser.add_option("-M",dest='mass',default='6.5',
+    parser.add_option("-M",dest='mass',default='5,9',
                       help="Mass or mass range to consider; given as log10(mass)")
     parser.add_option("--rsfac",dest='rsfac',default=1.,type='float',
                       help="Use a r_s(M) relation that is a factor of rsfac different from the fiducial one")
@@ -198,8 +198,9 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
     # Run ABC
     while True:
         # Simulate a rate
-        rate= 10.**(numpy.random.uniform()*(options.ratemax-options.ratemin)
-                    +options.ratemin)*cdmrate
+        l10rate= 10.**(numpy.random.uniform()*(options.ratemax-options.ratemin)
+                    +options.ratemin)
+        rate= l10rate*cdmrate
         # Simulate
         sdf_pepper.simulate(rate=rate,sample_GM=sample_GM,sample_rs=sample_rs,
                             Xrs=options.Xrs)
@@ -213,8 +214,8 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
         else:
             dens_unp= densOmega[0]
             omega_unp= densOmega[1]
-        write_dens_unp= [numpy.log10(rate)]
-        write_omega_unp= [numpy.log10(rate)]
+        write_dens_unp= [l10rate]
+        write_omega_unp= [l10rate]
         write_dens_unp.extend(list(dens_unp))
         write_omega_unp.extend(list(omega_unp))
         denswriter.writerow(write_dens_unp)
@@ -231,9 +232,10 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
         tcsd= signal.csd(tdens,tdens,fs=1./(xixi[1]-xixi[0]),
                        scaling='spectrum',nperseg=len(xixi))[1].real
         power= numpy.sqrt(tcsd*(xixi[-1]-xixi[0]))
-        yield (numpy.log10(rate),
+        yield (l10rate,
                numpy.fabs(power[1]-power_data[1]),
-               numpy.fabs(power[2]-power_data[2]))
+               numpy.fabs(power[2]-power_data[2]),
+               numpy.fabs(power[3]-power_data[3]))
 
 def abcsims(sdf_pepper,sdf_smooth,options):
     """

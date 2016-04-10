@@ -45,7 +45,7 @@ def get_options():
     parser.add_option("--plummer",action="store_true", 
                       dest="plummer",default=False,
                       help="If set, use a Plummer DM profile rather than Hernquist")
-    parser.add_option("--age",dest='age',default=9.,type='float',
+    parser.add_option("--age",dest='age',default=5.,type='float',
                       help="Age of the stream in Gyr")
     # Parallel angles at which to compute stuff
     parser.add_option("--amin",dest='amin',default=0.,
@@ -61,7 +61,7 @@ def get_options():
     parser.add_option("--polydeg",dest='polydeg',default=0,
                       type='int',
                       help="Polynomial order to fit to smooth stream density")
-    parser.add_option("--minxi",dest='minxi',default=4.,
+    parser.add_option("--minxi",dest='minxi',default=4.05,
                       type='float',
                       help="Minimum xi to consider")   
     parser.add_option("--maxxi",dest='maxxi',default=14.35,
@@ -114,9 +114,9 @@ def setup_densOmegaWriter(apar,options):
     outdens= options.outdens
     outomega= options.outomega
     if not options.batch is None:
-        outdens= outdens.replace('.dat','%i.dat' % options.batch)
+        outdens= outdens.replace('.dat','.%i.dat' % options.batch)
     if not options.batch is None:
-        outomega= outomega.replace('.dat','%i.dat' % options.batch)
+        outomega= outomega.replace('.dat','.%i.dat' % options.batch)
     if os.path.exists(outdens):
         # First read the file to check apar
         apar_file= numpy.genfromtxt(outdens,delimiter=',',max_rows=1)
@@ -160,13 +160,13 @@ def process_pal5_densdata(options):
     data_err= data_err[indx]
     # Compute power spectrum
     tdata= data[:,1]-backg
-    pp= Polynomial.fit(data[:,0],tdata,deg=options.poly_deg,w=1./data_err[:,1])
+    pp= Polynomial.fit(data[:,0],tdata,deg=options.polydeg,w=1./data_err[:,1])
     tdata/= pp(data[:,0])
     ll= data[:,0]
     py= signal.csd(tdata,tdata,fs=1./(ll[1]-ll[0]),scaling='spectrum',
                    nperseg=len(ll))[1]
     py= py.real
-    return numpy.sqrt(py*(ll[-1]-ll[0]))
+    return (numpy.sqrt(py*(ll[-1]-ll[0])),data_err[:,1]/pp(data[:,0]))
 
 def pal5_abc(sdf_pepper,sdf_smooth,options):
     """
@@ -194,13 +194,14 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
                         for r in rate_range])
     print "Using an overall CDM rate of %f" % cdmrate
     # Load Pal 5 data to compare to
-    power_data= process_pal5_densdata()
+    power_data, data_err= process_pal5_densdata(options)
     # Run ABC
     while True:
         # Simulate a rate
-        l10rate= 10.**(numpy.random.uniform()*(options.ratemax-options.ratemin)
-                    +options.ratemin)
-        rate= l10rate*cdmrate
+        l10rate= (numpy.random.uniform()*(options.ratemax-options.ratemin)
+                  +options.ratemin)
+        rate= 10.**l10rate*cdmrate
+        print l10rate, rate
         # Simulate
         sdf_pepper.simulate(rate=rate,sample_GM=sample_GM,sample_rs=sample_rs,
                             Xrs=options.Xrs)
@@ -225,13 +226,18 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
         # Convert density to observed density
         xixi,tdens= convert_dens_to_obs(sdf_pepper,apar,
                                         dens_unp,omega_unp,
-                                        poly_deg=options.poly_deg,
+                                        poly_deg=options.polydeg,
                                         minxi=options.minxi,
                                         maxxi=options.maxxi)
+        # Add errors
+        tdens+= numpy.random.normal(size=len(xixi))*data_err
         # Compute power spectrum
         tcsd= signal.csd(tdens,tdens,fs=1./(xixi[1]-xixi[0]),
                        scaling='spectrum',nperseg=len(xixi))[1].real
         power= numpy.sqrt(tcsd*(xixi[-1]-xixi[0]))
+        print(l10rate,power[1],power_data[1],
+              power[2],power_data[2],
+              power[3],power_data[3])
         yield (l10rate,
                numpy.fabs(power[1]-power_data[1]),
                numpy.fabs(power[2]-power_data[2]),
@@ -253,17 +259,20 @@ def abcsims(sdf_pepper,sdf_smooth,options):
        2016-04-08 - Written - Bovy (UofT)
     """
     print("Running ABC sims ...")
-    if os.path.exists(options.abcfile):
+    abcfile= options.abcfile
+    if not options.batch is None:
+        abcfile= abcfile.replace('.dat','.%i.dat' % options.batch)
+    if os.path.exists(abcfile):
         # First read the file to check apar
-        csvabc= open(options.abcfile,'a')
+        csvabc= open(abcfile,'a')
         abcwriter= csv.writer(csvabc,delimiter=',')
     else:
-        csvabc= open(options.abcfile,'w')
+        csvabc= open(abcfile,'w')
         abcwriter= csv.writer(csvabc,delimiter=',')
     start= time.time()
     for sim in pal5_abc(sdf_pepper,sdf_smooth,options):
         abcwriter.writerow(list(sim))
-        abcwriter.flush()
+        csvabc.flush()
         if (time.time()-start) > options.dt*60.: break
     return None
 

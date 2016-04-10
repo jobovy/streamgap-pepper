@@ -68,6 +68,9 @@ def get_options():
     parser.add_option("--maxxi",dest='maxxi',default=14.35,
                       type='float',
                       help="Maximum xi to consider")   
+    parser.add_option("--nerrsim",dest='nerrsim',default=100,
+                      type='int',
+                      help="Simulate this many realizations of the errors per rate simulation")   
     # Parameters of the ABC simulation
     parser.add_option("--ratemin",dest='ratemin',default=-1.,
                       type='float',
@@ -75,9 +78,9 @@ def get_options():
     parser.add_option("--ratemax",dest='ratemax',default=1.,
                       type='float',
                       help="Maximum rate compared to CDM expectation; in log10")
-    parser.add_option("--dt",dest='dt',default=60.,
-                      type='float',
-                      help="Number of minutes to run simulations for")
+    parser.add_option("-n","--nsamples",dest='nsamples',default=100,
+                      type='int',
+                      help="Number of simulations to run")
     return parser
 
 def load_abc(filename):
@@ -244,24 +247,26 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
         csvdens.flush()
         csvomega.flush()
         # Convert density to observed density
-        xixi,tdens= convert_dens_to_obs(sdf_pepper,apar,
+        xixi,dens= convert_dens_to_obs(sdf_pepper,apar,
                                         dens_unp,omega_unp,
                                         poly_deg=options.polydeg,
                                         minxi=options.minxi,
                                         maxxi=options.maxxi)
-        # Add errors
-        tdens+= numpy.random.normal(size=len(xixi))*data_err
-        # Compute power spectrum
-        tcsd= signal.csd(tdens,tdens,fs=1./(xixi[1]-xixi[0]),
-                       scaling='spectrum',nperseg=len(xixi))[1].real
-        power= numpy.sqrt(tcsd*(xixi[-1]-xixi[0]))
-        print(l10rate,power[1],power_data[1],
-              power[2],power_data[2],
-              power[3],power_data[3])
-        yield (l10rate,
-               numpy.fabs(power[1]-power_data[1]),
-               numpy.fabs(power[2]-power_data[2]),
-               numpy.fabs(power[3]-power_data[3]))
+        # Add errors (Rao-Blackwellize...)
+        for ee in range(options.nerrsim):
+            tdens= dens+numpy.random.normal(size=len(xixi))*data_err
+            # Compute power spectrum
+            tcsd= signal.csd(tdens,tdens,fs=1./(xixi[1]-xixi[0]),
+                             scaling='spectrum',nperseg=len(xixi))[1].real
+            power= numpy.sqrt(tcsd*(xixi[-1]-xixi[0]))
+            print(l10rate,power[1],power_data[1],
+                  power[2],power_data[2],
+                  power[3],power_data[3])
+            yield (l10rate,
+                   numpy.fabs(power[1]-power_data[1]),
+                   numpy.fabs(power[2]-power_data[2]),
+                   numpy.fabs(power[3]-power_data[3]),
+                   ee)
 
 def abcsims(sdf_pepper,sdf_smooth,options):
     """
@@ -290,10 +295,12 @@ def abcsims(sdf_pepper,sdf_smooth,options):
         csvabc= open(abcfile,'w')
         abcwriter= csv.writer(csvabc,delimiter=',')
     start= time.time()
+    nit= 0
     for sim in pal5_abc(sdf_pepper,sdf_smooth,options):
-        abcwriter.writerow(list(sim))
+        abcwriter.writerow(list(sim)[:-1])
         csvabc.flush()
-        if (time.time()-start) > options.dt*60.: break
+        nit+= 1
+        if nit >= options.nerrsim*options.nsamples: break
     return None
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 # run_pal5_abc.py: simple ABC method for constraining Nsubhalo from Pal 5 data
 import os, os.path
+import glob
 import csv
 import time
 import pickle
@@ -78,6 +79,25 @@ def get_options():
                       type='float',
                       help="Number of minutes to run simulations for")
     return parser
+
+def load_abc(filename):
+    """
+    NAME:
+       load_abc
+    PURPOSE:
+       Load all ABC runs for a given filename (all batches)
+    INPUT:
+       filename - filename w/o batch
+    OUTPUT:
+       array with ABC outputs
+    HISTORY:
+       2016-04-10 - Written - Bovy (UofT)
+    """
+    allfilenames= glob.glob(filename.replace('.dat','.*.dat'))
+    out= numpy.loadtxt(filename,delimiter=',')
+    for fname in allfilenames:
+        out= numpy.vstack((out,numpy.loadtxt(fname,delimiter=',')))
+    return out
 
 # Convert track to xi, eta
 def convert_dens_to_obs(sdf_pepper,apars,

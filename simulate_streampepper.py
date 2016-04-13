@@ -2,6 +2,7 @@
 import os, os.path
 import csv
 import time
+import pickle
 import numpy
 from scipy import integrate
 from optparse import OptionParser
@@ -201,10 +202,16 @@ if __name__ == '__main__':
                                             length_factor=options.length_factor)
     elif options.stream.lower() == 'pal5like':
         timpacts= parse_times(options.timpacts,options.age)
-        sdf_pepper= pal5_util.setup_pal5model(timpact=timpacts,
-                                              hernquist=not options.plummer,
-                                              age=options.age,
-                                              length_factor=options.length_factor)
+        if options.timpacts == '64sampling':
+            # We've cached this one
+            with open('pal5_64sampling.pkl','rb') as savefile:
+                sdf_smooth= pickle.load(savefile)
+                sdf_pepper= pickle.load(savefile)
+        else:
+            sdf_pepper= pal5_util.setup_pal5model(timpact=timpacts,
+                                                  hernquist=not options.plummer,
+                                                  age=options.age,
+                                                  length_factor=options.length_factor)
     # Need smooth?
     if options.amax is None or options.amin is None:
         if options.stream.lower() == 'gd1like':

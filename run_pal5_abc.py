@@ -259,9 +259,6 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
             tcsd= signal.csd(tdens,tdens,fs=1./(xixi[1]-xixi[0]),
                              scaling='spectrum',nperseg=len(xixi))[1].real
             power= numpy.sqrt(tcsd*(xixi[-1]-xixi[0]))
-            print(l10rate,power[1],power_data[1],
-                  power[2],power_data[2],
-                  power[3],power_data[3])
             yield (l10rate,
                    numpy.fabs(power[1]-power_data[1]),
                    numpy.fabs(power[2]-power_data[2]),

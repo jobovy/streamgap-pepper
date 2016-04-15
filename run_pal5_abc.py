@@ -81,6 +81,9 @@ def get_options():
     parser.add_option("-n","--nsamples",dest='nsamples',default=100,
                       type='int',
                       help="Number of simulations to run")
+    parser.add_option("-r","--recompute",action="store_true", 
+                      dest="recompute",default=False,
+                      help="If set, do not run simulations, but recompute the tatistics for existing densities")
     return parser
 
 def load_abc(filename):
@@ -194,56 +197,75 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
     # Setup apar grid
     apar= numpy.arange(options.amin,options.amax,options.dapar)
     dens_unp= numpy.array([sdf_smooth._density_par(a) for a in apar])
-    # Setup saving of the densities and mean Omegas
-    denswriter, omegawriter, csvdens, csvomega=\
-        setup_densOmegaWriter(apar,options)
-    # Setup sampling
-    massrange= simulate_streampepper.parse_mass(options.mass)
-    rs= simulate_streampepper.rs
-    sample_GM= lambda: (10.**((-0.5)*massrange[0])\
+    if options.recompute:
+        # Load density and omega from file
+        outdens= options.outdens
+        outomega= options.outomega
+        if not options.batch is None:
+            outdens= outdens.replace('.dat','.%i.dat' % options.batch)
+        if not options.batch is None:
+            outomega= outomega.replace('.dat','.%i.dat' % options.batch)
+        densdata= numpy.genfromtxt(outdens,delimiter=',',skip_header=2)
+        omegadata= numpy.genfromtxt(outomega,delimiter=',',skip_header=2)
+        nd= 0
+    else:
+        # Setup saving of the densities and mean Omegas
+        denswriter, omegawriter, csvdens, csvomega=\
+            setup_densOmegaWriter(apar,options)
+        # Setup sampling
+        massrange= simulate_streampepper.parse_mass(options.mass)
+        rs= simulate_streampepper.rs
+        sample_GM= lambda: (10.**((-0.5)*massrange[0])\
                             +(10.**((-0.5)*massrange[1])\
-                                  -10.**((-0.5)*massrange[0]))\
+                              -10.**((-0.5)*massrange[0]))\
                             *numpy.random.uniform())**(1./(-0.5))\
-                            /bovy_conversion.mass_in_msol(V0,R0)
-    sample_rs= lambda x: rs(x*bovy_conversion.mass_in_1010msol(V0,R0)*10.**10.,
-                            plummer=options.plummer)
-    rate_range= numpy.arange(massrange[0]+0.5,massrange[1]+0.5,1)
-    cdmrate= numpy.sum([simulate_streampepper.\
+            /bovy_conversion.mass_in_msol(V0,R0)
+        sample_rs= lambda x: rs(x*bovy_conversion.mass_in_1010msol(V0,R0)*10.**10.,
+                                plummer=options.plummer)
+        rate_range= numpy.arange(massrange[0]+0.5,massrange[1]+0.5,1)
+        cdmrate= numpy.sum([simulate_streampepper.\
                             dNencdm(sdf_pepper,10.**r,Xrs=options.Xrs,
                                     plummer=options.plummer,
                                     rsfac=options.rsfac)
-                        for r in rate_range])
-    print "Using an overall CDM rate of %f" % cdmrate
+                            for r in rate_range])
+        print "Using an overall CDM rate of %f" % cdmrate
     # Load Pal 5 data to compare to
     power_data, data_err= process_pal5_densdata(options)
     # Run ABC
     while True:
-        # Simulate a rate
-        l10rate= (numpy.random.uniform()*(options.ratemax-options.ratemin)
-                  +options.ratemin)
-        rate= 10.**l10rate*cdmrate
-        print l10rate, rate
-        # Simulate
-        sdf_pepper.simulate(rate=rate,sample_GM=sample_GM,sample_rs=sample_rs,
-                            Xrs=options.Xrs)
-        # Compute density and meanOmega and save
-        try:
-            densOmega= numpy.array([sdf_pepper._densityAndOmega_par_approx(a)
-                                    for a in apar]).T
-        except IndexError: # no hit
-            dens= numpy.array([sdf_smooth._density_par(a) for a in apar])
-            omega= numpy.array([sdf_smooth.meanOmega(a,oned=True) for a in apar])
+        if not options.recompute:
+            # Simulate a rate
+            l10rate= (numpy.random.uniform()*(options.ratemax-options.ratemin)
+                      +options.ratemin)
+            rate= 10.**l10rate*cdmrate
+            print l10rate, rate
+            # Simulate
+            sdf_pepper.simulate(rate=rate,sample_GM=sample_GM,sample_rs=sample_rs,
+                                Xrs=options.Xrs)
+            # Compute density and meanOmega and save
+            try:
+                densOmega= numpy.array([\
+                    sdf_pepper._densityAndOmega_par_approx(a) for a in apar]).T
+            except IndexError: # no hit
+                dens= numpy.array([sdf_smooth._density_par(a) for a in apar])
+                omega= numpy.array([sdf_smooth.meanOmega(a,oned=True) for a in apar])
+            else:
+                dens= densOmega[0]
+                omega= densOmega[1]
+            write_dens= [l10rate]
+            write_omega= [l10rate]
+            write_dens.extend(list(dens))
+            write_omega.extend(list(omega))
+            denswriter.writerow(write_dens)
+            omegawriter.writerow(write_omega)
+            csvdens.flush()
+            csvomega.flush()
         else:
-            dens= densOmega[0]
-            omega= densOmega[1]
-        write_dens= [l10rate]
-        write_omega= [l10rate]
-        write_dens.extend(list(dens))
-        write_omega.extend(list(omega))
-        denswriter.writerow(write_dens)
-        omegawriter.writerow(write_omega)
-        csvdens.flush()
-        csvomega.flush()
+            if nd >= len(densdata): break
+            l10rate= densdata[nd,0]
+            dens = densdata[nd,1:]
+            omega= omegadata[nd,1:]
+            nd+= 1
         # Convert density to observed density
         xixi,dens= convert_dens_to_obs(sdf_pepper,apar,
                                         dens,omega,dens_unp,
@@ -288,13 +310,41 @@ def abcsims(sdf_pepper,sdf_smooth,options):
     else:
         csvabc= open(abcfile,'w')
         abcwriter= csv.writer(csvabc,delimiter=',')
-    start= time.time()
     nit= 0
     for sim in pal5_abc(sdf_pepper,sdf_smooth,options):
         abcwriter.writerow(list(sim)[:-1])
         csvabc.flush()
         nit+= 1
         if nit >= options.nerrsim*options.nsamples: break
+    return None
+
+def recompute(sdf_pepper,sdf_smooth,options):
+    """
+    NAME:
+       recompute
+    PURPOSE:
+       Recompute the ABC summaries for existing simulations
+    INPUT:
+       sdf_pepper - streampepperdf object to compute peppering
+       sdf_smooth - streamdf object for smooth stream
+       options - the options dictionary
+    OUTPUT:
+       (none; just saves the simulations to a file)
+    HISTORY:
+       2016-04-14 - Written - Bovy (UofT)
+    """
+    print("Recomputing ABC sims ...")
+    abcfile= options.abcfile
+    if not options.batch is None:
+        abcfile= abcfile.replace('.dat','.%i.dat' % options.batch)
+    if os.path.exists(abcfile):
+        raise IOError("ERROR: abcfile already exists, would be overridden...")
+    else:
+        csvabc= open(abcfile,'w')
+        abcwriter= csv.writer(csvabc,delimiter=',')
+    for sim in pal5_abc(sdf_pepper,sdf_smooth,options):
+        abcwriter.writerow(list(sim)[:-1])
+        csvabc.flush()
     return None
 
 if __name__ == '__main__':
@@ -314,4 +364,7 @@ if __name__ == '__main__':
         with open(options.streamsavefilename,'rb') as savefile:
             sdf_smooth= pickle.load(savefile)
             sdf_pepper= pickle.load(savefile)
-    abcsims(sdf_pepper,sdf_smooth,options)
+    if options.recompute:
+        recompute(sdf_pepper,sdf_smooth,options)
+    else:
+        abcsims(sdf_pepper,sdf_smooth,options)

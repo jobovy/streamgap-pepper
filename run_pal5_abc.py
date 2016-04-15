@@ -8,7 +8,7 @@ from optparse import OptionParser
 import numpy
 from numpy.polynomial import Polynomial
 from scipy import interpolate, signal
-from galpy.util import save_pickles, bovy_conversion
+from galpy.util import save_pickles, bovy_conversion, bovy_coords
 import simulate_streampepper
 import pal5_util
 from gd1_util import R0,V0
@@ -104,7 +104,7 @@ def load_abc(filename):
 
 # Convert track to xi, eta
 def convert_dens_to_obs(sdf_pepper,apars,
-                        dens,mO,poly_deg=3,minxi=0.25,maxxi=14.35):
+                        dens,mO,dens_smooth,minxi=0.25,maxxi=14.35):
     """
     NAME:
         convert_dens_to_obs
@@ -114,24 +114,21 @@ def convert_dens_to_obs(sdf_pepper,apars,
         sdf_pepper - streampepperdf object
         apars - parallel angles
         dens - density(apars)
+        dens_smooth - smooth density(apars)
         mO= (None) mean parallel frequency (1D) 
             [needs to be set to get density on same grid as track]
-        poly_deg= (3) degree of the polynomial to fit for the 'smooth' stream
         minxi= (0.25) minimum xi to consider
     OUTPUT:
         (xi,dens/smooth)
     """
     mT= sdf_pepper.meanTrack(apars,_mO=mO,coord='lb')
+    mradec= bovy_coords.lb_to_radec(mT[0],mT[1],degree=True)
+    mxieta= pal5_util.radec_to_pal5xieta(mradec[:,0],mradec[:,1],degree=True)
     outll= numpy.arange(minxi,maxxi,0.1)
     # Interpolate density
-    ipll= interpolate.InterpolatedUnivariateSpline(mT[0],apars)
-    ipdens= interpolate.InterpolatedUnivariateSpline(apars,dens)
-    try:
-        pp= Polynomial.fit(outll,ipdens(ipll(outll)),deg=poly_deg)
-    except ValueError:
-        # Fails for constant when no hits
-        pp= lambda x: dens[5]
-    return (outll,ipdens(ipll(outll))/pp(outll))
+    ipll= interpolate.InterpolatedUnivariateSpline(mxieta[:,0],apars)
+    ipdens= interpolate.InterpolatedUnivariateSpline(apars,dens/dens_smooth)
+    return (outll,ipdens(ipll(outll)))
 
 def setup_densOmegaWriter(apar,options):
     outdens= options.outdens
@@ -196,6 +193,7 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
     """
     # Setup apar grid
     apar= numpy.arange(options.amin,options.amax,options.dapar)
+    dens_unp= numpy.array([sdf_smooth._density_par(a) for a in apar])
     # Setup saving of the densities and mean Omegas
     denswriter, omegawriter, csvdens, csvomega=\
         setup_densOmegaWriter(apar,options)
@@ -233,23 +231,22 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
             densOmega= numpy.array([sdf_pepper._densityAndOmega_par_approx(a)
                                     for a in apar]).T
         except IndexError: # no hit
-            dens_unp= numpy.array([sdf_smooth._density_par(a) for a in apar])
-            omega_unp= numpy.array([sdf_smooth.meanOmega(a,oned=True) for a in apar])
+            dens= numpy.array([sdf_smooth._density_par(a) for a in apar])
+            omega= numpy.array([sdf_smooth.meanOmega(a,oned=True) for a in apar])
         else:
-            dens_unp= densOmega[0]
-            omega_unp= densOmega[1]
-        write_dens_unp= [l10rate]
-        write_omega_unp= [l10rate]
-        write_dens_unp.extend(list(dens_unp))
-        write_omega_unp.extend(list(omega_unp))
-        denswriter.writerow(write_dens_unp)
-        omegawriter.writerow(write_omega_unp)
+            dens= densOmega[0]
+            omega= densOmega[1]
+        write_dens= [l10rate]
+        write_omega= [l10rate]
+        write_dens.extend(list(dens))
+        write_omega.extend(list(omega))
+        denswriter.writerow(write_dens)
+        omegawriter.writerow(write_omega)
         csvdens.flush()
         csvomega.flush()
         # Convert density to observed density
         xixi,dens= convert_dens_to_obs(sdf_pepper,apar,
-                                        dens_unp,omega_unp,
-                                        poly_deg=options.polydeg,
+                                        dens,omega,dens_unp,
                                         minxi=options.minxi,
                                         maxxi=options.maxxi)
         # Add errors (Rao-Blackwellize...)

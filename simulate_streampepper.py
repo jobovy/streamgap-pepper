@@ -59,6 +59,9 @@ def get_options():
     parser.add_option("--dt",dest='dt',default=60.,
                       type='float',
                       help="Number of minutes to run simulations for")
+    parser.add_option("-n","--nsamples",dest='nsamples',default=None,
+                      type='int',
+                      help="Number of simulations to run")
     return parser
 
 def parse_times(times,age):
@@ -169,7 +172,13 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
                             plummer=options.plummer,rsfac=options.rsfac)
     # Simulate
     start= time.time()
-    while time.time() < (start+options.dt*60.):
+    ns= 0
+    while True:
+        if options.nsamples is None and time.time() >= (start+options.dt*60.):
+            break
+        elif not options.nsamples is None and ns > options.nsamples:
+            break
+        ns+= 1
         sdf_pepper.simulate(rate=rate,sample_GM=sample_GM,sample_rs=sample_rs,
                             Xrs=options.Xrs)
         # Compute density and meanOmega and save

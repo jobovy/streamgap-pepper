@@ -155,7 +155,7 @@ def setup_densOmegaWriter(apar,options):
         csvomega= open(outomega,'w')
         denswriter= csv.writer(csvdens,delimiter=',')
         omegawriter= csv.writer(csvomega,delimiter=',')
-        # First write apar and the smooth calculations
+        # First write apar
         denswriter.writerow([a for a in apar])
         omegawriter.writerow([a for a in apar])
         csvdens.flush()
@@ -205,8 +205,8 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
             outdens= outdens.replace('.dat','.%i.dat' % options.batch)
         if not options.batch is None:
             outomega= outomega.replace('.dat','.%i.dat' % options.batch)
-        densdata= numpy.genfromtxt(outdens,delimiter=',',skip_header=2)
-        omegadata= numpy.genfromtxt(outomega,delimiter=',',skip_header=2)
+        densdata= numpy.genfromtxt(outdens,delimiter=',',skip_header=1)
+        omegadata= numpy.genfromtxt(outomega,delimiter=',',skip_header=1)
         nd= 0
     else:
         # Setup saving of the densities and mean Omegas
@@ -282,6 +282,8 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
                    numpy.fabs(power[1]-power_data[1]),
                    numpy.fabs(power[2]-power_data[2]),
                    numpy.fabs(power[3]-power_data[3]),
+                   numpy.fabs(numpy.log(numpy.mean(tdens[7:17])\
+                                            /numpy.mean(tdens[107:117]))),
                    ee)
 
 def abcsims(sdf_pepper,sdf_smooth,options):

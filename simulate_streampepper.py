@@ -46,6 +46,8 @@ def get_options():
                       help="If set, use a Plummer DM profile rather than Hernquist")
     parser.add_option("--age",dest='age',default=9.,type='float',
                       help="Age of the stream in Gyr")
+    parser.add_option("--sigma",dest='sigma',default=120.,type='float',
+                      help="Velocity dispersion of the population of DM subhalos")
     # Parallel angles at which to compute stuff
     parser.add_option("--amin",dest='amin',default=None,
                       type='float',
@@ -82,9 +84,9 @@ def rs(m,plummer=False,rsfac=1.):
         return 1.62*rsfac/R0*(m/10.**8.)**0.5
     else:
         return 1.05*rsfac/R0*(m/10.**8.)**0.5
-def dNencdm(sdf_pepper,m,Xrs=3.,plummer=False,rsfac=1.):
+def dNencdm(sdf_pepper,m,Xrs=3.,plummer=False,rsfac=1.,sigma=120.):
     return sdf_pepper.subhalo_encounters(\
-        sigma=120./220.,nsubhalo=nsubhalo(m),
+        sigma=sigma/V0,nsubhalo=nsubhalo(m),
         bmax=Xrs*rs(m,plummer=plummer,rsfac=rsfac))
 def powerlaw_wcutoff(massrange,cutoff):
     accept= False
@@ -139,7 +141,8 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
         rate= options.timescdm*dNencdm(sdf_pepper,
                                        10.**massrange[0],Xrs=options.Xrs,
                                        plummer=options.plummer,
-                                       rsfac=options.rsfac)
+                                       rsfac=options.rsfac,
+                                       sigma=options.sigma)
     elif len(massrange) == 2:
         # Sample from power-law
         if not options.cutoff is None:
@@ -158,7 +161,8 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
         rate_range= numpy.arange(massrange[0]+0.5,massrange[1]+0.5,1)
         rate= options.timescdm\
             *numpy.sum([dNencdm(sdf_pepper,10.**r,Xrs=options.Xrs,
-                                plummer=options.plummer,rsfac=options.rsfac)
+                                plummer=options.plummer,rsfac=options.rsfac,
+                                sigma=options.sigma)
                         for r in rate_range])
         if not options.cutoff is None:
             rate*= integrate.quad(lambda x: x**-1.5\
@@ -180,7 +184,7 @@ def run_simulations(sdf_pepper,sdf_smooth,options):
             break
         ns+= 1
         sdf_pepper.simulate(rate=rate,sample_GM=sample_GM,sample_rs=sample_rs,
-                            Xrs=options.Xrs)
+                            Xrs=options.Xrs,sigma=options.sigma/V0)
         # Compute density and meanOmega and save
         try:
             densOmega= numpy.array([sdf_pepper._densityAndOmega_par_approx(a)

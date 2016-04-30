@@ -215,11 +215,9 @@ def process_mock_densdata(options):
     pp= Polynomial.fit(xdata,tdata,deg=options.polydeg,w=1./numpy.sqrt(h+1.))
     tdata/= pp(xdata)
     ll= xdata
-    px, py= signal.csd(tdata,tdata,fs=1./(ll[1]-ll[0]),scaling='spectrum',
-                       nperseg=len(ll))
+    py= signal.csd(tdata,tdata,fs=1./(ll[1]-ll[0]),scaling='spectrum',
+                   nperseg=len(ll))[1]
     py= py.real
-    px= 1./px
-    py= numpy.sqrt(py*(ll[-1]-ll[0]))
     return (numpy.sqrt(py*(ll[-1]-ll[0])),numpy.sqrt(h+1.)/pp(xdata))
 
 def pal5_abc(sdf_pepper,sdf_smooth,options):

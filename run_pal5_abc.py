@@ -195,6 +195,7 @@ def process_pal5_densdata(options):
     return (numpy.sqrt(py*(ll[-1]-ll[0])),data_err[:,1]/pp(data[:,0]))
 
 def process_mock_densdata(options):
+    print("Using mock Pal 5 data from %s" % options.mockfilename)
     # Read and prep data for mocks
     xvid= numpy.loadtxt(options.mockfilename)
     xv= xvid[:,:6]

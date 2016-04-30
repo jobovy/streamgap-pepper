@@ -71,6 +71,9 @@ def get_options():
     parser.add_option("--nerrsim",dest='nerrsim',default=100,
                       type='int',
                       help="Simulate this many realizations of the errors per rate simulation")   
+    parser.add_option("-m",dest='mockfilename',
+                      default=None,
+                      help="If set, filename of a mock Pal 5 simulation to use instead of real data")
     # Parameters of the ABC simulation
     parser.add_option("--ratemin",dest='ratemin',default=-1.,
                       type='float',
@@ -191,6 +194,33 @@ def process_pal5_densdata(options):
     py= py.real
     return (numpy.sqrt(py*(ll[-1]-ll[0])),data_err[:,1]/pp(data[:,0]))
 
+def process_mock_densdata(options):
+    # Read and prep data for mocks
+    xvid= numpy.loadtxt(options.mockfilename)
+    xv= xvid[:,:6]
+    xv= xv[numpy.argsort(xvid[:,6])]
+    XYZ= bovy_coords.galcenrect_to_XYZ(xv[:,0],xv[:,1],xv[:,2],
+                                       Xsun=R0,Zsun=0.025)
+    lbd= bovy_coords.XYZ_to_lbd(XYZ[0],XYZ[1],XYZ[2],degree=True)
+    radec= bovy_coords.lb_to_radec(lbd[:,0],lbd[:,1],degree=True)
+    xieta= pal5_util.radec_to_pal5xieta(radec[:,0],radec[:,1],degree=True)
+    # make sure the progenitor is at (0,0)
+    xieta[:,0]-= numpy.median(xieta[:,0])
+    xieta[:,1]-= numpy.median(xieta[:,1])
+    h,e= numpy.histogram(xieta[:,0],range=[0.2,14.3],bins=141)
+    xdata= numpy.arange(0.25,14.35,0.1)
+    # Compute power spectrum
+    tdata= h-0.
+    pp= Polynomial.fit(xdata,tdata,deg=options.polydeg,w=1./numpy.sqrt(h+1.))
+    tdata/= pp(xdata)
+    ll= xdata
+    px, py= signal.csd(tdata,tdata,fs=1./(ll[1]-ll[0]),scaling='spectrum',
+                       nperseg=len(ll))
+    py= py.real
+    px= 1./px
+    py= numpy.sqrt(py*(ll[-1]-ll[0]))
+    return (numpy.sqrt(py*(ll[-1]-ll[0])),numpy.sqrt(h+1.)/pp(xdata))
+
 def pal5_abc(sdf_pepper,sdf_smooth,options):
     """
     """
@@ -230,7 +260,10 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
                             for r in rate_range])
         print "Using an overall CDM rate of %f" % cdmrate
     # Load Pal 5 data to compare to
-    power_data, data_err= process_pal5_densdata(options)
+    if options.mockfilename is None:
+        power_data, data_err= process_pal5_densdata(options)
+    else:
+        power_data, data_err= process_mock_densdata(options)
     # Run ABC
     while True:
         if not options.recompute:

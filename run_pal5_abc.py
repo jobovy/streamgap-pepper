@@ -87,6 +87,9 @@ def get_options():
     parser.add_option("-r","--recompute",action="store_true", 
                       dest="recompute",default=False,
                       help="If set, do not run simulations, but recompute the tatistics for existing densities")
+    parser.add_option("--recomputeall",action="store_true", 
+                      dest="recomputeall",default=False,
+                      help="If set, do not run simulations, but recompute the tatistics for existing densities for *all* existing batches")
     return parser
 
 def load_abc(filename):
@@ -398,7 +401,19 @@ if __name__ == '__main__':
         with open(options.streamsavefilename,'rb') as savefile:
             sdf_smooth= pickle.load(savefile)
             sdf_pepper= pickle.load(savefile)
-    if options.recompute:
+    if options.recomputeall:
+        options.recompute= True
+        # recompute basic
+        recompute(sdf_pepper,sdf_smooth,options)
+        # Find and recompute batches
+        allfilenames= glob.glob(options.outdens.replace('.dat','.*.dat'))
+        batches= numpy.array([int(fn.split('.dat')[0].split('.')[-1]) 
+                              for fn in allfilenames],
+                             dtype='int')
+        for batch in batches:
+            options.batch= batch
+            recompute(sdf_pepper,sdf_smooth,options)
+    elif options.recompute:
         recompute(sdf_pepper,sdf_smooth,options)
     else:
         abcsims(sdf_pepper,sdf_smooth,options)

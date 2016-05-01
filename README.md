@@ -58,7 +58,30 @@ parameters. Also contains the bispectrum in these spaces.
 Power spectra and bispectra in observed space (density and the stream
 track's location in the sky, distance, and line-of-sight velocity).
 
-## 5. Simulations
+## 5. [galpyPal5Model.ipynb](galpyPal5Model.ipynb)
+
+(render this notebook on [nbviewer](http://nbviewer.ipython.org/github/jobovy/streamgap-pepper/blob/master/galpyPal5Model.ipynb), where you can toggle the code)
+
+Contains the smooth stream model using ``galpy.df.streamdf`` for the Pal 5 data from [Fritz & Kallivayalil (2015](http://adsabs.harvard.edu/abs/2015ApJ...811..123F) and [Kuzma et al. 2015](http://adsabs.harvard.edu/abs/2015MNRAS.446.3297K).
+
+## 6. [StreamPepperAnalysisPal5LikeObserved.ipynb](StreamPepperAnalysisPal5LikeObserved.ipynb)
+
+(render this notebook on [nbviewer](http://nbviewer.ipython.org/github/jobovy/streamgap-pepper/blob/master/StreamPepperAnalysisPal5LikeObserved.ipynb), where you can toggle the code)
+
+Contains all code related to the ABC analysis of the Pal 5 data to
+constrain the number of dark-matter subhalos. Contains the figure with
+the Pal 5 density, that with densities from the simulations, the power
+spectrum of Pal 5, and the ABC PDFs. Also contains the analysis of
+mock Pal 5 N-body simulations with varying amounts of substructure.
+
+## 8. [meanStreamPathDiffs.ipynb](meanStreamPathDiffs.ipynb)
+
+(render this notebook on [nbviewer](http://nbviewer.ipython.org/github/jobovy/streamgap-pepper/blob/master/meanStreamPathDiffs.ipynb), where you can toggle the code)
+
+This notebook contains the figures of the overall changes to the
+density profile and track of tidal streams due to subhalo impacts.
+
+## 8. Simulations
 
 All simulations are run using the code in
 [simulate_streampepper.py](simulate_streampepper.py). This script has
@@ -66,7 +89,7 @@ a help function that explains its use. The notes at
 [simulations.rst](simulations.rst) give some examples of its
 invocation for many of the simulations that were run.
 
-## 6. [CompareNbodySimulations.ipynb](CompareNbodySimulations.ipynb)
+## 9. [CompareNbodySimulations.ipynb](CompareNbodySimulations.ipynb)
 
 (render this notebook on [nbviewer](http://nbviewer.ipython.org/github/jobovy/streamgap-pepper/blob/master/CompareNbodySimulations.ipynb), where you can toggle the code)
 

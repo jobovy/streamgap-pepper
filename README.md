@@ -37,7 +37,7 @@ frequency direction are much smaller than those in the parallel direction.
 impact compared to a mock sampling and a direct numerical evaluation.
 
 3. The test of the fast line-of-parallel-angle approach for four
-impactscompared to a mock sampling and a direct numerical evaluation.
+impacts compared to a mock sampling and a direct numerical evaluation.
 
 4. The example perturbed density and frequency tracks for different
 mass ranges and full mass range.
@@ -64,7 +64,7 @@ track's location in the sky, distance, and line-of-sight velocity).
 
 (render this notebook on [nbviewer](http://nbviewer.ipython.org/github/jobovy/streamgap-pepper/blob/master/galpyPal5Model.ipynb), where you can toggle the code)
 
-Contains the smooth stream model using ``galpy.df.streamdf`` for the Pal 5 data from [Fritz & Kallivayalil (2015](http://adsabs.harvard.edu/abs/2015ApJ...811..123F) and [Kuzma et al. 2015](http://adsabs.harvard.edu/abs/2015MNRAS.446.3297K).
+Contains the smooth stream model using ``galpy.df.streamdf`` for the Pal 5 data from [Fritz & Kallivayalil (2015)](http://adsabs.harvard.edu/abs/2015ApJ...811..123F) and [Kuzma et al. (2015)](http://adsabs.harvard.edu/abs/2015MNRAS.446.3297K).
 
 ## 6. [StreamPepperAnalysisPal5LikeObserved.ipynb](StreamPepperAnalysisPal5LikeObserved.ipynb)
 

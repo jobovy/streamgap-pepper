@@ -4,8 +4,10 @@ Exploring the effect of impacts from a CDM-like population of
 dark-matter subhalos on tidal streams.
 
 This repository contains the code associated with the paper Bovy,
-Erkal, \& Sanders (2016, BES16). The ipython notebooks used to
-generate the plots in this paper can be found in the top-level
+Erkal, \& Sanders (2016, BES16), which you should cite if you re-use
+any of this code (in addition to, most likely,
+[galpy](https://github.com/jobovy/galpy)). The ipython notebooks used
+to generate the plots in this paper can be found in the top-level
 directory of this repository. This code uses
 [galpy](https://github.com/jobovy/galpy) and the
 [streampepperdf.py](https://gist.github.com/jobovy/1be0be25b525e5f50ea3)
@@ -89,7 +91,13 @@ a help function that explains its use. The notes at
 [simulations.rst](simulations.rst) give some examples of its
 invocation for many of the simulations that were run.
 
-## 9. [CompareNbodySimulations.ipynb](CompareNbodySimulations.ipynb)
+## 9. ABC simulations
+
+All ABC simulations are run using the code in
+[run_pal5_abc.py](run_pal5_abc.py). This script has a help function
+that explains its use.
+
+## 10. [CompareNbodySimulations.ipynb](CompareNbodySimulations.ipynb)
 
 (render this notebook on [nbviewer](http://nbviewer.ipython.org/github/jobovy/streamgap-pepper/blob/master/CompareNbodySimulations.ipynb), where you can toggle the code)
 

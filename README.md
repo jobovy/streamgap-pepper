@@ -76,7 +76,7 @@ the Pal 5 density, that with densities from the simulations, the power
 spectrum of Pal 5, and the ABC PDFs. Also contains the analysis of
 mock Pal 5 N-body simulations with varying amounts of substructure.
 
-## 8. [meanStreamPathDiffs.ipynb](meanStreamPathDiffs.ipynb)
+## 7. [meanStreamPathDiffs.ipynb](meanStreamPathDiffs.ipynb)
 
 (render this notebook on [nbviewer](http://nbviewer.ipython.org/github/jobovy/streamgap-pepper/blob/master/meanStreamPathDiffs.ipynb), where you can toggle the code)
 

@@ -53,7 +53,7 @@ def custom_sample_aAt(sdf,n):
     dO1s[atperi==0]= numpy.random.normal(size=n-numpy.sum(atperi))\
         *0.023+0.243
     # Put everything together and rotate etc.
-    dO1s/= bovy_conversion.freq_in_kmskpc(sdf._Vnorm,sdf._Rnorm)
+    dO1s/= bovy_conversion.freq_in_kmskpc(sdf._vo,sdf._ro)
     dO1s= numpy.array(dO1s)*sdf._sigMeanSign
     dO2s= numpy.random.normal(size=n)*numpy.sqrt(sdf._sortedSigOEig[1])
     dO3s= numpy.random.normal(size=n)*numpy.sqrt(sdf._sortedSigOEig[0])
@@ -95,7 +95,7 @@ def custom_sample_aAt_pal5(sdf,n):
     dO1s[atperi==0]= numpy.random.normal(size=n-numpy.sum(atperi))\
         *0.033+0.277
     # Put everything together and rotate etc.
-    dO1s/= bovy_conversion.freq_in_kmskpc(sdf._Vnorm,sdf._Rnorm)
+    dO1s/= bovy_conversion.freq_in_kmskpc(sdf._vo,sdf._ro)
     dO1s= numpy.array(dO1s)*sdf._sigMeanSign
     dO2s= numpy.random.normal(size=n)*numpy.sqrt(sdf._sortedSigOEig[1])
     dO3s= numpy.random.normal(size=n)*numpy.sqrt(sdf._sortedSigOEig[0])

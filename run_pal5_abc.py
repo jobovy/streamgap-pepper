@@ -10,9 +10,11 @@ from numpy.polynomial import Polynomial
 from scipy import interpolate, signal
 from galpy.util import save_pickles, bovy_conversion, bovy_coords
 import simulate_streampepper
+import bispectrum
 import pal5_util
 from gd1_util import R0,V0
 _DATADIR= os.getenv('DATADIR')
+_BISPECIND= 2
 def get_options():
     usage = "usage: %prog [options]"
     parser = OptionParser(usage=usage)
@@ -195,7 +197,13 @@ def process_pal5_densdata(options):
     py= signal.csd(tdata,tdata,fs=1./(ll[1]-ll[0]),scaling='spectrum',
                    nperseg=len(ll))[1]
     py= py.real
-    return (numpy.sqrt(py*(ll[-1]-ll[0])),data_err[:,1]/pp(data[:,0]))
+    # Also compute the bispectrum
+    Bspec, Bpx= bispectrum.bispectrum(numpy.vstack((tdata,tdata)).T,
+                                      nfft=len(tdata),wind=7,nsamp=1,overlap=0)
+    ppyr= numpy.fabs(Bspec[len(Bspec)//2+_BISPECIND,len(Bspec)//2:].real)
+    ppyi= numpy.fabs(Bspec[len(Bspec)//2+_BISPECIND,len(Bspec)//2:].imag)
+    return (numpy.sqrt(py*(ll[-1]-ll[0])),data_err[:,1]/pp(data[:,0]),
+            ppyr,ppyi)
 
 def process_mock_densdata(options):
     print("Using mock Pal 5 data from %s" % options.mockfilename)
@@ -221,7 +229,13 @@ def process_mock_densdata(options):
     py= signal.csd(tdata,tdata,fs=1./(ll[1]-ll[0]),scaling='spectrum',
                    nperseg=len(ll))[1]
     py= py.real
-    return (numpy.sqrt(py*(ll[-1]-ll[0])),numpy.sqrt(h+1.)/pp(xdata))
+    # Also compute the bispectrum
+    Bspec, Bpx= bispectrum.bispectrum(numpy.vstack((tdata,tdata)).T,
+                                      nfft=len(tdata),wind=7,nsamp=1,overlap=0)
+    ppyr= numpy.fabs(Bspec[len(Bspec)//2+_BISPECIND,len(Bspec)//2:].real)
+    ppyi= numpy.fabs(Bspec[len(Bspec)//2+_BISPECIND,len(Bspec)//2:].imag)
+    return (numpy.sqrt(py*(ll[-1]-ll[0])),numpy.sqrt(h+1.)/pp(xdata),
+            ppyr,ppyi)
 
 def pal5_abc(sdf_pepper,sdf_smooth,options):
     """
@@ -263,9 +277,11 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
         print "Using an overall CDM rate of %f" % cdmrate
     # Load Pal 5 data to compare to
     if options.mockfilename is None:
-        power_data, data_err= process_pal5_densdata(options)
+        power_data, data_err, data_ppyr, data_ppyi=\
+                                    process_pal5_densdata(options)
     else:
-        power_data, data_err= process_mock_densdata(options)
+        power_data, data_err, data_ppyr, data_ppyi=\
+                                    process_mock_densdata(options)
     # Run ABC
     while True:
         if not options.recompute:
@@ -313,12 +329,22 @@ def pal5_abc(sdf_pepper,sdf_smooth,options):
             tcsd= signal.csd(tdens,tdens,fs=1./(xixi[1]-xixi[0]),
                              scaling='spectrum',nperseg=len(xixi))[1].real
             power= numpy.sqrt(tcsd*(xixi[-1]-xixi[0]))
+            # Compute bispectrum
+            Bspec, Bpx= bispectrum.bispectrum(numpy.vstack((tdens,tdens)).T,
+                                              nfft=len(tdens),wind=7,
+                                              nsamp=1,overlap=0)
+            ppyr= numpy.fabs(Bspec[len(Bspec)//2+_BISPECIND,
+                                   len(Bspec)//2:].real)
+            ppyi= numpy.fabs(Bspec[len(Bspec)//2+_BISPECIND,
+                                   len(Bspec)//2:].imag)
             yield (l10rate,
                    numpy.fabs(power[1]-power_data[1]),
                    numpy.fabs(power[2]-power_data[2]),
                    numpy.fabs(power[3]-power_data[3]),
                    numpy.fabs(numpy.log(numpy.mean(tdens[7:17])\
                                             /numpy.mean(tdens[107:117]))),
+                   numpy.fabs(ppyr-data_ppyr)[_BISPECIND],
+                   numpy.fabs(ppyi-data_ppyi)[_BISPECIND],
                    ee)
 
 def abcsims(sdf_pepper,sdf_smooth,options):

@@ -34,10 +34,10 @@ def get_options():
                       dest="single",default=False,
                       help="If set, perform a single, large impact")
     parser.add_option("--singletimpact",
-                      dest='singletimpact',default=7.,type='float',
+                      dest='singletimpact',default=3.,type='float',
                       help="Time of impact (in Gyr) for the single impact case")
     parser.add_option("--singlemimpact",
-                      dest='singlemimpact',default=7.,type='float',
+                      dest='singlemimpact',default=10.,type='float',
                       help="Mass of impact (in 10^7 msun) for the single impact case")
     return parser
 
@@ -62,14 +62,40 @@ def create_frames(options,args):
     # Setup impacts
     if options.single:
         # Just hit the leading arm
-        m= options.mimpact/bovy_conversion.mass_in_1010msol(V0,R0)/1000.
-        t= options.timpact/bovy_conversion.time_in_Gyr(V0,R0)
+        m= options.singlemimpact/bovy_conversion.mass_in_1010msol(V0,R0)/1000.
+        t= timpacts[\
+            numpy.argmin(\
+                numpy.fabs(\
+                    numpy.array(timpacts)\
+                        -options.singletimpact\
+                        /bovy_conversion.time_in_Gyr(V0,R0)))]
         sdf_pepper_leading.set_impacts(\
-            impactb=[0.5*simulate_streampepper.rs(options.mimpact*10.**7.)],
+            impactb=[0.5*simulate_streampepper.rs(options.singlemimpact*10.**7.)],
             subhalovel=numpy.array([[-25.,155.,30.]])/V0,
-            impact_angle=[0.6],
+            impact_angle=[0.4],
             timpact=[t],
-            GM=[m],rs=[simulate_streampepper.rs(options.mimpact*10.**7.)])
+            GM=[m],rs=[simulate_streampepper.rs(options.singlemimpact*10.**7.)])
+        # Hit trailing with zero
+        sdf_pepper_trailing.set_impacts(\
+            impactb=[0.],
+            subhalovel=numpy.array([[-25.,155.,30.]])/V0,
+            impact_angle=[-0.2],
+            timpact=[timpacts[0]],
+            GM=[0.],rs=[1.])
+    else:
+        # Hit both with zero
+        sdf_pepper_leading.set_impacts(\
+            impactb=[0.],
+            subhalovel=numpy.array([[-25.,155.,30.]])/V0,
+            impact_angle=[0.2],
+            timpact=[timpacts[0]],
+            GM=[0.],rs=[1.])
+        sdf_pepper_trailing.set_impacts(\
+            impactb=[0.],
+            subhalovel=numpy.array([[-25.,155.,30.]])/V0,
+            impact_angle=[-0.2],
+            timpact=[timpacts[0]],
+            GM=[0.],rs=[1.])
     # Now make all frames
     bovy_plot.bovy_print(fig_height=3.,fig_width=7.)
     xlabel= r'$X_{\mathrm{orb}}\,(\mathrm{kpc})$'
@@ -78,6 +104,7 @@ def create_frames(options,args):
     yrange= [-1.,.2]
     TL= _projection_orbplane(prog)
     for ii in tqdm.tqdm(range(len(timpacts))):
+        if ii < 12: continue
         timpact= timpacts[-ii-1]
         overplot= False
         for sdf_pepper,Om,angle,dt \
@@ -93,7 +120,7 @@ def create_frames(options,args):
                 tangle-= tOm*timpact
                 # Apply all kicks relevant for this impact 
                 # (copied from streampepperdf)
-                dangle_at_impact= tangle\
+                dangle_at_impact= angle\
                     -numpy.tile(sdf_pepper._progenitor_angle.T,
                                 (options.nparticles,1)).T\
                                 -(tOm-numpy.tile(sdf_pepper._progenitor_Omega.T,
@@ -200,7 +227,8 @@ def create_frames(options,args):
                      *(9.-timpact*bovy_conversion.time_in_Gyr(V0,R0))/9.-1.,
                  xrange[1]\
                      *(9.-timpact*bovy_conversion.time_in_Gyr(V0,R0))/9.+1.]
-            bovy_plot.bovy_plot(plotx,ploty,
+            bovy_plot.bovy_plot(plotx,
+                                ploty,
                                 '.',ms=2.,
                                 color=sns.color_palette("colorblind")[0],
                                 alpha=0.2,

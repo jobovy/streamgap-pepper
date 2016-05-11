@@ -6,6 +6,7 @@ import subprocess
 from galpy.util import bovy_plot, bovy_conversion
 from matplotlib import pyplot
 import seaborn as sns
+import simulate_streampepper
 from streampepperdf import streampepperdf
 from optparse import OptionParser
 from gd1_util import R0, V0
@@ -24,15 +25,25 @@ def get_options():
     # Simulation options
     parser.add_option("-n",dest='nparticles',default=10000,type='int',
                       help="Number of particles to sample for each tail")
+    parser.add_option("--nsnap",dest='nsnap',default=1024,type='int',
+                      help="Number of snapshots to produce (must match a gd1pappernsnap.pkl file and gd1peppernsnap_trailing file)")
+    # Single impact?
+    parser.add_option("--single",action="store_true", 
+                      dest="single",default=False,
+                      help="If set, perform a single, large impact")
+    parser.add_option("--singletimpact",
+                      dest='singletimpact',default=7.,type='float',
+                      help="Time of impact (in Gyr) for the single impact case")
+    parser.add_option("--singlemimpact",
+                      dest='singlemimpact',default=7.,type='float',
+                      help="Mass of impact (in 10^7 msun) for the single impact case")
     return parser
 
 def create_frames(options,args):
     # First reload the model
-    #with open('gd1pepper1024sampling.pkl','rb') as savefile:
-    with open('gd1pepper64sampling.pkl','rb') as savefile:
+    with open('gd1pepper%isampling.pkl' % options.nsnap,'rb') as savefile:
         sdf_pepper_leading= pickle.load(savefile)
-    #with open('gd1pepper1024sampling_trailing.pkl','rb') as savefile:
-    with open('gd1pepper64sampling_trailing.pkl','rb') as savefile:
+    with open('gd1pepper%isampling_trailing.pkl' % options.nsnap,'rb') as savefile:
         sdf_pepper_trailing= pickle.load(savefile)
     # Output times
     timpacts= sdf_pepper_leading._uniq_timpact
@@ -46,6 +57,17 @@ def create_frames(options,args):
     prog.integrate(numpy.linspace(0.,9./bovy_conversion.time_in_Gyr(V0,R0),
                                   10001),sdf_pepper_leading._pot)
     prog.flip()
+    # Setup impacts
+    if options.single:
+        # Just hit the leading arm
+        m= options.mimpact/bovy_conversion.mass_in_1010msol(V0,R0)/1000.
+        t= options.timpact/bovy_conversion.time_in_Gyr(V0,R0)
+        sdf_pepper_leading.set_impacts(\
+            impactb=[0.5*simulate_streampepper.rs(options.mimpact*10.**7.)],
+            subhalovel=numpy.array([[-25.,155.,30.]])/V0,
+            impact_angle=[0.6],
+            timpact=[t],
+            GM=[m],rs=[simulate_streampepper.rs(options.mimpact*10.**7.)])
     # Now make all frames
     bovy_plot.bovy_print(fig_height=3.,fig_width=7.)
     xlabel= r'$X_{\mathrm{orb}}\,(\mathrm{kpc})$'
@@ -240,6 +262,7 @@ def create_movie(options,args):
                                '-i',
                                options.basefilename+'_%05d.png',
                                '-y',
+                               '-framerate',str(framerate),
                                '-r',str(framerate),
                                '-b', str(bitrate),
                                options.outputfilename])

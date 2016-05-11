@@ -3,6 +3,8 @@ import pickle
 import numpy
 import tqdm
 import subprocess
+import matplotlib
+matplotlib.use('Agg')
 from galpy.util import bovy_plot, bovy_conversion
 from matplotlib import pyplot
 import seaborn as sns

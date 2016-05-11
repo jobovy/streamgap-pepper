@@ -1,9 +1,13 @@
+# Create movies with commands like
+# python make_pepper_movie.py -o test.mpg --base=movies/pepperx5/pepperRvR --pepper --noaxes --timescdm=5.
+# python make_pepper_movie.py -o test.mpg --base=movies/pepperx5/pepperRvR --pepper --noaxes --timescdm=5. --movie
 import os, os.path
 import copy
 import pickle
 import numpy
 import tqdm
 import subprocess
+import statsmodels.api as sm
 import matplotlib
 matplotlib.use('Agg')
 from galpy.util import bovy_plot, bovy_conversion, multi
@@ -43,6 +47,23 @@ def get_options():
     parser.add_option("--singlemimpact",
                       dest='singlemimpact',default=10.,type='float',
                       help="Mass of impact (in 10^7 msun) for the single impact case")
+    # Full range
+    parser.add_option("--pepper",action="store_true", 
+                      dest="pepper",default=False,
+                      help="If set, sample from all possible impacts")
+    parser.add_option("--timescdm",dest='timescdm',default=1.,type='float',
+                      help="Use a rate that is timescdm times the CDM prediction")
+    parser.add_option("--Mmin",dest='Mmin',default=5.,type='float',
+                      help="log10() of the minimum mass in Msun")
+    parser.add_option("--Mmax",dest='Mmax',default=9.,type='float',
+                      help="log10() of the max mass in Msun")
+    # Ploting options
+    parser.add_option("--noaxes",action="store_true", 
+                      dest="noaxes",default=False,
+                      help="If set, don't plot axes")
+    parser.add_option("--lowess",action="store_true", 
+                      dest="lowess",default=False,
+                      help="If set, add a trendline to each tail")
     return parser
 
 def create_frames(options,args):
@@ -94,6 +115,33 @@ def create_frames(options,args):
             impact_angle=[-0.3],
             timpact=[t],
             GM=[m],rs=[simulate_streampepper.rs(options.singlemimpact*10.**7.)])
+    elif options.pepper:
+        # Sampling functions
+        massrange=[options.Mmin,options.Mmax]
+        plummer= False
+        Xrs= 5.
+        nsubhalo= simulate_streampepper.nsubhalo
+        rs= simulate_streampepper.rs
+        dNencdm= simulate_streampepper.dNencdm
+        sample_GM= lambda: (10.**((-0.5)*massrange[0])\
+                            +(10.**((-0.5)*massrange[1])\
+                              -10.**((-0.5)*massrange[0]))\
+                            *numpy.random.uniform())**(1./(-0.5))\
+            /bovy_conversion.mass_in_msol(V0,R0)
+        rate_range= numpy.arange(massrange[0]+0.5,massrange[1]+0.5,1)
+        rate= numpy.sum([dNencdm(sdf_pepper_leading,10.**r,Xrs=Xrs,
+                                 plummer=plummer)
+                         for r in rate_range])
+        rate= options.timescdm*rate
+        sample_rs= lambda x: rs(x*bovy_conversion.mass_in_1010msol(V0,R0)*10.**10.,
+                                plummer=plummer)
+        # Pepper both
+        sdf_pepper_leading.simulate(rate=rate,sample_GM=sample_GM,
+                                    sample_rs=sample_rs,Xrs=Xrs)
+        print numpy.amax(sdf_pepper_leading._GM)*bovy_conversion.mass_in_1010msol(V0,R0)
+        sdf_pepper_trailing.simulate(rate=rate,sample_GM=sample_GM,
+                                    sample_rs=sample_rs,Xrs=Xrs)
+        print numpy.amax(sdf_pepper_trailing._GM)*bovy_conversion.mass_in_1010msol(V0,R0)
     else:
         # Hit both with zero
         sdf_pepper_leading.set_impacts(\
@@ -124,7 +172,7 @@ def _plot_one_frame(ii,options,prog,timpacts,
     xlabel= r'$X_{\mathrm{orb}}\,(\mathrm{kpc})$'
     ylabel= r'$Y_{\mathrm{orb}}\,(\mathrm{kpc})$'
     xrange= [-12.,12.]
-    yrange= [-1.5,.3]
+    yrange= [-1.75,.3]
     TL= _projection_orbplane(prog)
     if options.skip and os.path.exists(options.basefilename+'_%s.png'\
                                        % str(ii).zfill(5)):
@@ -254,14 +302,22 @@ def _plot_one_frame(ii,options,prog,timpacts,
         bovy_plot.bovy_plot(plotx,
                             ploty,
                             '.',ms=2.,
-                            color=sns.color_palette("colorblind")[0],
-                            alpha=0.2,
+                            color=sns.color_palette("colorblind")[3],
+                            alpha=0.2/(options.nparticles/10000.),
                             xlabel=xlabel,
                             ylabel=ylabel,
                             xrange=txrange,
                             yrange=yrange,
                             zorder=4,
                             overplot=overplot)
+        # Add trendline
+        if options.lowess:
+            lowess = sm.nonparametric.lowess
+            z= lowess(ploty,plotx,frac=0.02/(options.nparticles/10000.))
+            bovy_plot.bovy_plot(z[::100*(options.nparticles//10000),0],
+                                z[::100*(options.nparticles//10000),1],
+                                color=sns.color_palette('colorblind')[2],
+                                lw=1.5,zorder=2,overplot=True)
         overplot= True
     # Plot progenitor orbit
     for tp in [cprog,cprogf]:
@@ -276,10 +332,15 @@ def _plot_one_frame(ii,options,prog,timpacts,
         ploty= numpy.dot(rot,numpy.array([(tx-tpx)*R0,
                                           (ty-tpy)*R0]))[1]
         bovy_plot.bovy_plot(plotx,ploty,
-                            color=sns.color_palette('colorblind')[2],
-                            lw=2.,zorder=0,
+                            color=sns.color_palette('colorblind')[0],
+                            lw=1.25,zorder=0,
                             overplot=True)
-    pyplot.subplots_adjust(bottom=0.175,left=0.11,right=0.965,top=0.95)
+    if options.noaxes:
+        pyplot.subplots_adjust(bottom=0.02,left=0.02,right=.98,top=.98)
+    else:
+        pyplot.subplots_adjust(bottom=0.175,left=0.11,right=0.965,top=0.95)
+    if options.noaxes:
+        pyplot.axis('off')
     bovy_plot.bovy_end_print(options.basefilename+'_%s.png'\
                              % str(ii).zfill(5))
     return None

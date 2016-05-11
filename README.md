@@ -3,6 +3,8 @@
 Exploring the effect of impacts from a CDM-like population of
 dark-matter subhalos on tidal streams.
 
+![Demo](http://astro.utoronto.ca/~bovy/test.gif)
+
 This repository contains the code associated with the paper Bovy,
 Erkal, \& Sanders (2016, BES16), which you should cite if you re-use
 any of this code (in addition to, most likely,

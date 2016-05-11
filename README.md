@@ -18,7 +18,7 @@ perturbed stream structure.
 
 There are various useful notebooks, in addition to others that were
 used during code development that are not described further here;
-these are all contained in the [dev/])dev/) subdirectory.
+these are all contained in the [dev/](dev/) subdirectory.
 
 ## 1. [GD1Like-simulation-figures.ipynb](GD1Like-simulation-figures.ipynb)
 

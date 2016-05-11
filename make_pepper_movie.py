@@ -1,3 +1,4 @@
+import os, os.path
 import copy
 import pickle
 import numpy
@@ -24,6 +25,9 @@ def get_options():
                       help="Name of the file that will hold the movie")
     parser.add_option("--base",dest='basefilename',default=None,
                       help="Basename of the frame files (incl. directory)")
+    parser.add_option("--skip",action="store_true", 
+                      dest="skip",default=False,
+                      help="If set, skip existing frames")
     # Simulation options
     parser.add_option("-n",dest='nparticles',default=10000,type='int',
                       help="Number of particles to sample for each tail")
@@ -78,6 +82,9 @@ def create_frames(options,args):
     yrange= [-1.,.2]
     TL= _projection_orbplane(prog)
     for ii in tqdm.tqdm(range(len(timpacts))):
+        if options.skip and os.path.exists(options.basefilename+'_%s.png'\
+                                    % str(ii).zfill(5)):
+            continue
         timpact= timpacts[-ii-1]
         overplot= False
         for sdf_pepper,Om,angle,dt \
@@ -227,7 +234,7 @@ def create_frames(options,args):
                                 color=sns.color_palette('colorblind')[2],
                                 lw=2.,zorder=0,
                                 overplot=True)
-        pyplot.tight_layout()
+        pyplot.subplots_adjust(bottom=0.175,left=0.11,right=0.965,top=0.95)
         bovy_plot.bovy_end_print(options.basefilename+'_%s.png'\
                                      % str(ii).zfill(5))
     return None

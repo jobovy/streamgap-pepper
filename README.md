@@ -16,6 +16,13 @@ directory of this repository. This code uses
 ``galpy`` extension, which implements the fast calculation of the
 perturbed stream structure.
 
+The GIF above shows a
+[GD-1-like](http://adsabs.harvard.edu/abs/2006ApJ...643L..17G) stream
+as it orbits the Milky Way while being perturbed by subhalos at a rate
+that is three times that naively expected from CDM. Further movies
+that display the same for different rates can be found in [this
+directory](http://astro.utoronto.ca/~bovy/streams/pepper-movies).
+
 There are various useful notebooks, in addition to others that were
 used during code development that are not described further here;
 these are all contained in the [dev/](dev/) subdirectory.

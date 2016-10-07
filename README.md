@@ -105,7 +105,10 @@ invocation for many of the simulations that were run.
 
 All ABC simulations are run using the code in
 [run_pal5_abc.py](run_pal5_abc.py). This script has a help function
-that explains its use.
+that explains its use. This function was run with commands like
+```
+python run_pal5_abc.py -s pal5_64sampling.pkl --outdens=$DATADIR/bovy/streamgap-pepper/pal5_abc/sims/pal5_t64sampling_X10_6-9_p3_mxp25_dens.dat --outomega=$DATADIR/bovy/streamgap-pepper/pal5_abc/sims/pal5_t64sampling_X10_6-9_p3_mxp25_omega.dat -o $DATADIR/bovy/streamgap-pepper/pal5_abc_bispec/abc/pal5_t64sampling_X10_6-9_polydeg3_minxi0p25_abc.dat -t 64sampling -X 10. -M 6,9 --polydeg=3 --minxi=0.25 -n 50
+```
 
 ## 10. [CompareNbodySimulations.ipynb](CompareNbodySimulations.ipynb)
 

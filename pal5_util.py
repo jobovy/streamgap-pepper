@@ -69,4 +69,5 @@ def setup_pal5model(leading=False,
                             spline_order=1,
                             hernquist=hernquist,
                             length_factor=length_factor)
+    sdf.turn_physical_off()
     return sdf

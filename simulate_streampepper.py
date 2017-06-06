@@ -231,6 +231,7 @@ if __name__ == '__main__':
             sdf_smooth= gd1_util.setup_gd1model(age=options.age)
         else:
             sdf_smooth= pal5_util.setup_pal5model(age=options.age)
+        sdf_smooth.turn_physical_off()
     else:
         sdf_smooth= None
     if options.amax is None:

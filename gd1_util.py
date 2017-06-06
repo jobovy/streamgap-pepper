@@ -41,4 +41,5 @@ def setup_gd1model(leading=True,
                             spline_order=1,
                             hernquist=hernquist,
                             length_factor=length_factor)
+    sdf.turn_physical_off()
     return sdf
